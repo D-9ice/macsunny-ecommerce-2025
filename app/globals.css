@@ -49,6 +49,18 @@
   background-color: #f3f4f6 !important;
 }
 
+/* Toast slide-in animation */
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 .force-bg-green-light {
   background-color: #f0fdf4 !important;
 }

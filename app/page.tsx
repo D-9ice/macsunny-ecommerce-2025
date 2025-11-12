@@ -4,7 +4,8 @@ import { Suspense, useEffect, useState, FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Product, allProducts, readAdmin } from './lib/products';
-import { addToCart } from './lib/cart';
+import { addToCart, getCart } from './lib/cart';
+import { showToast } from './components/Toast';
 import WhatsAppFab from './components/WhatsAppFab';
 import ComponentsMenu from './components/ComponentsMenu';
 import AIChatFab from './components/AIChatFab';
@@ -40,6 +41,7 @@ function HomeContent() {
   const [allProductsList, setAllProductsList] = useState<Product[]>([]);
   const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -77,6 +79,20 @@ function HomeContent() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [router]);
 
+  // Update cart count on mount and after adding items
+  useEffect(() => {
+    const updateCartCount = () => {
+      const cart = getCart();
+      const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+      setCartCount(totalItems);
+    };
+
+    updateCartCount();
+    // Listen for storage changes from other tabs
+    window.addEventListener('storage', updateCartCount);
+    return () => window.removeEventListener('storage', updateCartCount);
+  }, []);
+
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -93,9 +109,15 @@ function HomeContent() {
         image: product.image,
         qty: 1,
       });
+      // Update cart count immediately
+      const cart = getCart();
+      const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+      setCartCount(totalItems);
+      // Show success toast
+      showToast(`${product.name} added to cart!`, 'success');
     } catch (error) {
       console.error('Failed to add to cart:', error);
-      alert('Failed to add item to cart. Please try again.');
+      showToast('Failed to add item to cart. Please try again.', 'error');
     }
   };
 
@@ -119,9 +141,14 @@ function HomeContent() {
           <Link
             href="/cart"
             id="cartBtn"
-            className="flex h-10 w-24 items-center justify-center rounded-md bg-yellow-400 font-medium text-black transition-colors hover:bg-yellow-500"
+            className="relative flex h-10 w-24 items-center justify-center rounded-md bg-yellow-400 font-medium text-black transition-colors hover:bg-yellow-500"
           >
             Cart
+            {cartCount > 0 && (
+              <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white">
+                {cartCount > 99 ? '99+' : cartCount}
+              </span>
+            )}
           </Link>
           <ComponentsMenu />
         </div>
@@ -146,9 +173,19 @@ function HomeContent() {
       </h2>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-green-500" />
-          <p className="mt-4">Loading products...</p>
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {Array.from({ length: 10 }).map((_, index) => (
+            <div
+              key={index}
+              className="flex flex-col gap-3 rounded-xl border border-gray-800 bg-zinc-900 p-4 animate-pulse"
+            >
+              <div className="h-32 w-full rounded-lg bg-gray-800" />
+              <div className="h-6 w-3/4 rounded bg-gray-800" />
+              <div className="h-4 w-1/2 rounded bg-gray-700" />
+              <div className="h-5 w-1/3 rounded bg-gray-800" />
+              <div className="mt-auto h-10 w-full rounded-md bg-gray-800" />
+            </div>
+          ))}
         </div>
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center text-gray-400">
@@ -166,13 +203,13 @@ function HomeContent() {
           {items.map((product) => (
             <article
               key={product.sku}
-              className="flex flex-col gap-3 rounded-xl border border-gray-800 bg-zinc-900 p-4 text-white shadow-sm transition-shadow hover:shadow-md"
+              className="flex flex-col gap-3 rounded-xl border border-gray-800 bg-zinc-900 p-4 text-white shadow-sm transition-all duration-300 hover:shadow-xl hover:border-green-500"
             >
-              <div className="relative h-32 w-full overflow-hidden rounded-lg bg-black/60">
+              <div className="relative h-32 w-full overflow-hidden rounded-lg bg-black/60 cursor-zoom-in group">
                 <img
                   src={product.image || '/macsunny-logo.png'}
                   alt={product.name}
-                  className="h-full w-full object-contain transition-transform duration-300 hover:scale-105"
+                  className="h-full w-full object-contain transition-all duration-500 group-hover:scale-125"
                   onError={(event) => {
                     const target = event.currentTarget;
                     target.src = '/macsunny-logo.png';

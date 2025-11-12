@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { ThemeProvider } from './context/ThemeContext';
 import { ReactQueryProvider } from './providers/ReactQueryProvider';
+import ToastContainer from './components/Toast';
 
 export const metadata: Metadata = {
   title: 'MacSunny Electronics — Parts Sourcing',
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Navbar />
             <div className="mx-auto max-w-6xl px-4 py-6">{children}</div>
             <Footer />
+            <ToastContainer />
           </ThemeProvider>
         </ReactQueryProvider>
       </body>
