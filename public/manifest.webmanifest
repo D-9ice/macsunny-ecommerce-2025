@@ -1,0 +1,45 @@
+{
+  "name": "MacSunny Electronics",
+  "short_name": "MacSunny",
+  "description": "Home of high quality electronics components & accessories",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0f5132",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48 32x32 16x16",
+      "type": "image/x-icon",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "192x192",
+      "type": "image/x-icon",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "512x512",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["shopping", "electronics"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Browse Components",
+      "url": "/",
+      "description": "Browse all electronic components"
+    },
+    {
+      "name": "Cart",
+      "url": "/cart",
+      "description": "View shopping cart"
+    }
+  ]
+}

@@ -1,100 +1,218 @@
-import Image from "next/image";
+'use client';
+
+import { Suspense, useEffect, useState, FormEvent } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Product, allProducts, readAdmin } from './lib/products';
+import { addToCart } from './lib/cart';
+import WhatsAppFab from './components/WhatsAppFab';
+import ComponentsMenu from './components/ComponentsMenu';
+import AIChatFab from './components/AIChatFab';
+import LocationFab from './components/LocationFab';
+
+const MAX_RESULTS = 25;
+
+function filterProducts(query: string, productsList: Product[]): Product[] {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) {
+    return productsList.slice(0, MAX_RESULTS);
+  }
+
+  return productsList
+    .filter((product) => {
+      const name = product.name.toLowerCase();
+      const category = product.category.toLowerCase();
+      const sku = product.sku.toLowerCase();
+      return (
+        name.includes(trimmed) ||
+        category.includes(trimmed) ||
+        sku.includes(trimmed)
+      );
+    })
+    .slice(0, MAX_RESULTS);
+}
+
+function HomeContent() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const q = params.get('q') ?? '';
+
+  const [allProductsList, setAllProductsList] = useState<Product[]>([]);
+  const [items, setItems] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const adminProducts = readAdmin();
+        if (adminProducts && adminProducts.length > 0) {
+          setAllProductsList(adminProducts);
+        } else {
+          setAllProductsList(allProducts());
+        }
+      } catch (error) {
+        console.error('Failed to load products:', error);
+        setAllProductsList(allProducts());
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
+
+  useEffect(() => {
+    setItems(filterProducts(q, allProductsList));
+  }, [q, allProductsList]);
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'A') {
+        event.preventDefault();
+        router.push('/admin');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [router]);
+
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const query = (formData.get('q') as string) ?? '';
+    router.push(query ? `/?q=${encodeURIComponent(query)}` : '/');
+  };
+
+  const handleAddToCart = (product: Product) => {
+    try {
+      addToCart({
+        sku: product.sku,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        qty: 1,
+      });
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+      alert('Failed to add item to cart. Please try again.');
+    }
+  };
+
+  return (
+    <main className="mx-auto max-w-6xl px-4 py-6">
+      <form className="mb-6 flex flex-col gap-3 md:flex-row md:items-center" onSubmit={handleSearch}>
+        <input
+          name="q"
+          defaultValue={q}
+          placeholder="Search components (e.g., 10k resistor, 0603, LM7805)"
+          aria-label="Search products"
+          className="w-full rounded-md border border-gray-700 bg-black px-3 py-2.5 text-white placeholder-gray-400 focus:border-green-500 focus:outline-none md:h-10"
+        />
+        <div className="flex flex-shrink-0 items-stretch gap-3">
+          <button
+            type="submit"
+            className="h-10 w-24 rounded-md bg-green-700 font-medium text-white transition-colors hover:bg-green-800"
+          >
+            Search
+          </button>
+          <Link
+            href="/cart"
+            id="cartBtn"
+            className="flex h-10 w-24 items-center justify-center rounded-md bg-yellow-400 font-medium text-black transition-colors hover:bg-yellow-500"
+          >
+            Cart
+          </Link>
+          <ComponentsMenu />
+        </div>
+      </form>
+
+      {q && (
+        <div className="mb-4 flex items-center gap-2 text-sm">
+          <span className="text-gray-400">Showing results for:</span>
+          <span className="font-semibold text-white">{q}</span>
+          <button
+            type="button"
+            onClick={() => router.push('/')}
+            className="text-green-400 transition-colors hover:text-green-300"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
+      <h2 className="mb-4 text-xl font-semibold">
+        {q ? `Search Results (${items.length})` : 'Latest Components'}
+      </h2>
+
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-green-500" />
+          <p className="mt-4">Loading products...</p>
+        </div>
+      ) : items.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center text-gray-400">
+          <p className="text-lg">No products found for "{q}"</p>
+          <button
+            type="button"
+            onClick={() => router.push('/')}
+            className="mt-4 rounded-md bg-green-700 px-6 py-2 font-medium text-white transition-colors hover:bg-green-800"
+          >
+            View All Products
+          </button>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {items.map((product) => (
+            <article
+              key={product.sku}
+              className="flex flex-col gap-3 rounded-xl border border-gray-800 bg-zinc-900 p-4 text-white shadow-sm transition-shadow hover:shadow-md"
+            >
+              <div className="relative h-32 w-full overflow-hidden rounded-lg bg-black/60">
+                <img
+                  src={product.image || '/macsunny-logo.png'}
+                  alt={product.name}
+                  className="h-full w-full object-contain transition-transform duration-300 hover:scale-105"
+                  onError={(event) => {
+                    const target = event.currentTarget;
+                    target.src = '/macsunny-logo.png';
+                  }}
+                />
+              </div>
+              <h3 className="text-lg font-semibold">{product.name}</h3>
+              <p className="text-sm text-gray-400">
+                {product.sku} • {product.category}
+              </p>
+              <p className="text-base font-medium text-yellow-300">
+                GHS {product.price.toFixed(2)}
+              </p>
+              <button
+                type="button"
+                onClick={() => handleAddToCart(product)}
+                className="mt-auto w-full rounded-md bg-yellow-400 px-4 py-2 font-medium text-black transition-colors hover:bg-yellow-500"
+              >
+                Add to Cart
+              </button>
+            </article>
+          ))}
+        </div>
+      )}
+
+      <WhatsAppFab />
+      <AIChatFab />
+      <LocationFab />
+    </main>
+  );
+}
 
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-           <li className="mb-2 tracking-[-.01em]">
-    MacSunny Electronics 🚀
-  </li>
-  <li className="tracking-[-.01em]">
-    Save and see your changes instantly.
-  </li>
- 
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-6xl px-4 py-6 text-gray-300">Loading...</div>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }
