@@ -7,7 +7,7 @@ import {
   getCart,
   cartTotal,
   clearCart,
-} from '../../lib/cart';
+} from '../app/lib/cart';
 
 export default function CheckoutPage() {
   const router = useRouter();

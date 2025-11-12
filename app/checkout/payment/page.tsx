@@ -1,7 +1,7 @@
 // app/checkout/payment/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { 
@@ -11,7 +11,7 @@ import {
   getPaystackPublicKey 
 } from '@/app/lib/paystack';
 
-export default function PaymentPage() {
+function PaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [paystackLoaded, setPaystackLoaded] = useState(false);
@@ -148,5 +148,24 @@ export default function PaymentPage() {
         </div>
       </main>
     </>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense 
+      fallback={
+        <div className="mx-auto max-w-2xl px-4 py-12">
+          <div className="rounded-lg border border-gray-700 bg-gray-900 p-8 text-white shadow-lg">
+            <div className="text-center">
+              <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-green-500" />
+              <p className="mt-4 text-gray-400">Loading payment details...</p>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <PaymentContent />
+    </Suspense>
   );
 }
