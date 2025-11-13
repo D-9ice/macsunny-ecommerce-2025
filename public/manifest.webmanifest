@@ -10,22 +10,22 @@
   "theme_color": "#0f5132",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "48x48 32x32 16x16",
-      "type": "image/x-icon",
+      "src": "/macsunny-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/favicon.ico",
-      "sizes": "192x192",
-      "type": "image/x-icon",
-      "purpose": "maskable"
+      "src": "/macsunny-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/favicon.ico",
-      "sizes": "512x512",
-      "type": "image/x-icon",
-      "purpose": "any maskable"
+      "src": "/macsunny-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "categories": ["shopping", "electronics"],

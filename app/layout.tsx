@@ -8,8 +8,10 @@ import { ReactQueryProvider } from './providers/ReactQueryProvider';
 import ToastContainer from './components/Toast';
 
 export const metadata: Metadata = {
-  title: 'MacSunny Electronics — Parts Sourcing',
-  description: 'Home of original electronic components and accessories.',
+  title: 'MacSunny Electronics — Quality Electronic Components & Accessories',
+  description: 'MacSunny Electronics - Your trusted source for original electronic components, modules, semiconductors, and accessories in Ghana. Quality parts sourcing for all your electronics needs.',
+  keywords: ['electronic components', 'Ghana electronics', 'resistors', 'capacitors', 'ICs', 'modules', 'semiconductors', 'MacSunny'],
+  authors: [{ name: 'MacSunny Electronics' }],
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
@@ -20,8 +22,18 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    icon: '/favicon.ico',
-    apple: '/favicon.ico',
+    icon: '/macsunny-logo.png',
+    apple: '/macsunny-logo.png',
+    shortcut: '/macsunny-logo.png',
+  },
+  openGraph: {
+    title: 'MacSunny Electronics — Quality Electronic Components',
+    description: 'Your trusted source for original electronic components and accessories in Ghana',
+    url: 'https://www.macsunny.com',
+    siteName: 'MacSunny Electronics',
+    images: ['/macsunny-logo.png'],
+    locale: 'en_GH',
+    type: 'website',
   },
 };
 

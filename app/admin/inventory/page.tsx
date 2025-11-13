@@ -23,8 +23,20 @@ export default function InventoryPage() {
     loadProducts();
   }, []);
 
-  const loadProducts = () => {
-    setProducts(allProducts());
+  const loadProducts = async () => {
+    try {
+      const response = await fetch('/api/products');
+      if (response.ok) {
+        const data = await response.json();
+        setProducts(data.products || []);
+      } else {
+        // Fallback to localStorage
+        setProducts(allProducts());
+      }
+    } catch (error) {
+      console.error('Failed to load products:', error);
+      setProducts(allProducts());
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -62,25 +74,37 @@ export default function InventoryPage() {
     }
   };
 
-  const handleAddProduct = () => {
+  const handleAddProduct = async () => {
     if (!formData.sku || !formData.name || !formData.category || formData.price <= 0) {
       alert('Please fill in all fields correctly');
       return;
     }
 
-    const adminProducts = readAdmin();
-    const newProduct: Product = { ...formData };
-
-    if (products.some(p => p.sku === newProduct.sku)) {
+    if (products.some(p => p.sku === formData.sku)) {
       alert('SKU already exists!');
       return;
     }
 
-    adminProducts.push(newProduct);
-    writeAdmin(adminProducts);
-    loadProducts();
-    setShowAddForm(false);
-    resetForm();
+    try {
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        await loadProducts();
+        setShowAddForm(false);
+        resetForm();
+        alert('Product added successfully!');
+      } else {
+        const data = await response.json();
+        alert(data.message || 'Failed to add product');
+      }
+    } catch (error) {
+      console.error('Failed to add product:', error);
+      alert('Failed to add product');
+    }
   };
 
   const handleEditProduct = (product: Product) => {
@@ -90,29 +114,51 @@ export default function InventoryPage() {
     setShowAddForm(true);
   };
 
-  const handleUpdateProduct = () => {
+  const handleUpdateProduct = async () => {
     if (!editingProduct) return;
 
-    const adminProducts = readAdmin();
-  const index = adminProducts.findIndex((p: Product) => p.sku === editingProduct.sku);
+    try {
+      const response = await fetch('/api/products', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
 
-    if (index !== -1) {
-      adminProducts[index] = formData;
-      writeAdmin(adminProducts);
+      if (response.ok) {
+        await loadProducts();
+        setEditingProduct(null);
+        setShowAddForm(false);
+        resetForm();
+        alert('Product updated successfully!');
+      } else {
+        const data = await response.json();
+        alert(data.message || 'Failed to update product');
+      }
+    } catch (error) {
+      console.error('Failed to update product:', error);
+      alert('Failed to update product');
     }
-
-    loadProducts();
-    setShowAddForm(false);
-    resetForm();
   };
 
-  const handleDeleteProduct = (sku: string) => {
+  const handleDeleteProduct = async (sku: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
 
-    const adminProducts = readAdmin();
-  const filtered = adminProducts.filter((p: Product) => p.sku !== sku);
-    writeAdmin(filtered);
-    loadProducts();
+    try {
+      const response = await fetch(`/api/products?sku=${encodeURIComponent(sku)}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        await loadProducts();
+        alert('Product deleted successfully!');
+      } else {
+        const data = await response.json();
+        alert(data.message || 'Failed to delete product');
+      }
+    } catch (error) {
+      console.error('Failed to delete product:', error);
+      alert('Failed to delete product');
+    }
   };
 
   const resetForm = () => {
