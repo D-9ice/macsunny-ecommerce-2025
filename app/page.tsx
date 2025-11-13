@@ -46,15 +46,34 @@ function HomeContent() {
   useEffect(() => {
     const loadProducts = async () => {
       try {
+        // Fetch from database API instead of localStorage
+        const response = await fetch('/api/products');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.products && data.products.length > 0) {
+            setAllProductsList(data.products);
+          } else {
+            // Fallback to default products
+            setAllProductsList(allProducts());
+          }
+        } else {
+          // Fallback to localStorage/default
+          const adminProducts = readAdmin();
+          if (adminProducts && adminProducts.length > 0) {
+            setAllProductsList(adminProducts);
+          } else {
+            setAllProductsList(allProducts());
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load products:', error);
+        // Fallback to localStorage/default
         const adminProducts = readAdmin();
         if (adminProducts && adminProducts.length > 0) {
           setAllProductsList(adminProducts);
         } else {
           setAllProductsList(allProducts());
         }
-      } catch (error) {
-        console.error('Failed to load products:', error);
-        setAllProductsList(allProducts());
       } finally {
         setLoading(false);
       }

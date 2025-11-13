@@ -2,7 +2,7 @@
 
 export default function Footer() {
   return (
-    <footer className="mt-16 border-t border-gray-800/40 bg-black py-10 text-gray-200">
+    <footer className="mt-16 border-t border-gray-800/40 bg-black py-10 pb-24 text-gray-200">
       <div className="mx-auto max-w-6xl px-4 text-center space-y-5">
         <p>
           <span className="font-semibold">MacSunny Electronics</span> — Parts Sourcing • WhatsApp/Phone:
