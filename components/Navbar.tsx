@@ -23,9 +23,14 @@ export default function Navbar() {
       </div>
 
       <div className="absolute inset-x-0 bottom-[1px]">
-        <p className="mx-auto max-w-6xl px-[1px] text-center text-[clamp(5px,1.8vw,16px)] text-white/90 whitespace-nowrap overflow-hidden">
-          <span className="font-semibold">WhatsApp/Phone:</span> (+233) 0243380902·0249135208·0551507985·<span className="font-semibold">Email:</span> Macsunny2025@gmail.com·<Link href="https://www.macsunny.com" className="underline">www.macsunny.com</Link>
-        </p>
+        <div className="mx-auto max-w-6xl px-[1px] text-center text-white/90">
+          <p className="text-[clamp(5px,1.8vw,16px)] leading-tight">
+            <span className="font-semibold">WhatsApp/Phone:</span> (+233) 0243380902·0249135208·0551507985
+          </p>
+          <p className="text-[clamp(5px,1.8vw,16px)] leading-tight">
+            <span className="font-semibold">Email:</span> Macsunny2025@gmail.com · <Link href="https://www.macsunny.com" className="underline">www.macsunny.com</Link>
+          </p>
+        </div>
       </div>
     </header>
   );
