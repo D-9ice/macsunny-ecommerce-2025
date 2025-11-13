@@ -27,7 +27,7 @@ export default function LocationFab() {
             ZONGOLANE ACCRA CENTRAL, ACCRA, GHANA
           </p>
           <a
-            href="https://www.google.com/maps/search/?api=1&query=Zongolane+Accra+Central,+Accra,+Ghana"
+            href="https://maps.app.goo.gl/2Nn1h2YZgfJ59n8C8"
             target="_blank"
             rel="noopener noreferrer"
             className="block rounded-md bg-amber-500 py-2 text-center font-semibold force-white transition hover:bg-amber-600"
