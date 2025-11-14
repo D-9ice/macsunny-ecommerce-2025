@@ -35,7 +35,7 @@ export default function LocationFab() {
 
       {/* Animated Pop-up */}
       {open && (
-        <div className="fixed bottom-24 right-5 z-[60] w-64 rounded-xl force-bg-white p-4 shadow-2xl border-2 border-blue-400 animate-fade-in-up">
+        <div className="fixed bottom-[232px] right-5 z-[60] w-64 rounded-xl force-bg-white p-4 shadow-2xl border-2 border-blue-400 animate-fade-in-up">
           <h3 className="mb-2 font-bold force-black">Find Us</h3>
           <p className="mb-3 text-sm force-gray-dark">
             ZONGOLANE ACCRA CENTRAL, ACCRA, GHANA

@@ -31,7 +31,7 @@ export default function AIChatFab() {
 
       {/* Animated Pop-up */}
       {open && (
-        <div className="fixed bottom-24 right-5 z-[60] w-64 rounded-xl force-bg-white p-4 shadow-2xl border-2 border-purple-400 animate-fade-in-up">
+        <div className="fixed bottom-[164px] right-5 z-[60] w-64 rounded-xl force-bg-white p-4 shadow-2xl border-2 border-purple-400 animate-fade-in-up">
           <h3 className="mb-2 font-bold force-black">Ask MacSunny AI</h3>
           <p className="mb-3 text-sm force-gray-dark">
             Chat with our AI assistant for instant help.
