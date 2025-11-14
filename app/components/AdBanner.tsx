@@ -65,9 +65,9 @@ export default function AdBanner() {
               </div>
             </div>
 
-            <p className="text-base font-bold text-blue-600 mb-5 leading-relaxed">
+            <p className="text-base font-bold leading-relaxed mb-5" style={{ color: '#2563EB' }}>
               Need a high-quality, world-class, professionally designed website and applications for your business? Reach out to Tech-Hub DevConsults at{' '}
-              <a href="mailto:techub.devconsults@gmail.com" className="underline hover:text-blue-800">
+              <a href="mailto:techub.devconsults@gmail.com" className="underline" style={{ color: '#1D4ED8' }}>
                 techub.devconsults@gmail.com
               </a>
             </p>
@@ -99,10 +99,6 @@ export default function AdBanner() {
             >
               Contact Us Now →
             </a>
-
-            <p className="text-sm text-gray-500 mt-4 text-center font-semibold">
-              📧 techub.devconsults@gmail.com
-            </p>
           </div>
         </div>
       )}
