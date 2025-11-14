@@ -171,6 +171,7 @@ export default function InventoryPage() {
   const [categories, setCategories] = useState<string[]>([]);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [newCategory, setNewCategory] = useState('');
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
 
   useEffect(() => {
     loadCategories();
@@ -220,6 +221,100 @@ export default function InventoryPage() {
     } catch (error) {
       console.error('Failed to add category:', error);
       alert('Failed to add category');
+    }
+  };
+
+  const handleEditCategory = (categoryName: string) => {
+    setEditingCategory(categoryName);
+    setNewCategory(categoryName);
+    setShowCategoryForm(true);
+  };
+
+  const handleUpdateCategory = async () => {
+    if (!newCategory.trim() || !editingCategory) {
+      alert('Please enter a category name');
+      return;
+    }
+
+    const cleanCategory = newCategory.trim();
+    
+    if (cleanCategory === editingCategory) {
+      alert('No changes made');
+      setEditingCategory(null);
+      setNewCategory('');
+      setShowCategoryForm(false);
+      return;
+    }
+
+    if (categories.includes(cleanCategory)) {
+      alert('Category already exists');
+      return;
+    }
+
+    try {
+      // First, update all products that use this category
+      const productsResponse = await fetch('/api/products');
+      const productsData = await productsResponse.json();
+      
+      if (productsData.success && productsData.products) {
+        const productsToUpdate = productsData.products.filter(
+          (p: Product) => p.category === editingCategory
+        );
+        
+        for (const product of productsToUpdate) {
+          await fetch('/api/products', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...product, category: cleanCategory }),
+          });
+        }
+      }
+
+      // Delete the old category
+      await fetch(`/api/categories?name=${encodeURIComponent(editingCategory)}`, {
+        method: 'DELETE',
+      });
+
+      // Add the new category
+      await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: cleanCategory }),
+      });
+
+      await loadCategories();
+      await loadProducts();
+      setNewCategory('');
+      setEditingCategory(null);
+      setShowCategoryForm(false);
+      alert('Category updated successfully!');
+    } catch (error) {
+      console.error('Failed to update category:', error);
+      alert('Failed to update category');
+    }
+  };
+
+  const handleDeleteCategory = async (categoryName: string) => {
+    if (!confirm(`Are you sure you want to delete the category "${categoryName}"?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/categories?name=${encodeURIComponent(categoryName)}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        await loadCategories();
+        alert('Category deleted successfully!');
+      } else {
+        alert(data.message || 'Failed to delete category');
+      }
+    } catch (error) {
+      console.error('Failed to delete category:', error);
+      alert('Failed to delete category');
     }
   };
 
@@ -278,7 +373,9 @@ export default function InventoryPage() {
 
         {showCategoryForm && (
           <div className="mb-8 bg-blue-900/20 border border-blue-700 rounded-xl p-6">
-            <h2 className="text-xl font-semibold mb-4">Add New Category</h2>
+            <h2 className="text-xl font-semibold mb-4">
+              {editingCategory ? 'Edit Category' : 'Add New Category'}
+            </h2>
             <div className="flex gap-3">
               <input
                 type="text"
@@ -287,16 +384,64 @@ export default function InventoryPage() {
                 placeholder="e.g., Sensors, Connectors, Tools"
                 className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
               />
-              <button
-                onClick={handleAddCategory}
-                className="px-6 py-2 bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors"
-              >
-                Add
-              </button>
+              {editingCategory ? (
+                <>
+                  <button
+                    onClick={handleUpdateCategory}
+                    className="px-6 py-2 bg-green-700 hover:bg-green-800 rounded-lg transition-colors"
+                  >
+                    Update
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingCategory(null);
+                      setNewCategory('');
+                    }}
+                    className="px-6 py-2 bg-gray-700 hover:bg-gray-800 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleAddCategory}
+                  className="px-6 py-2 bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors"
+                >
+                  Add
+                </button>
+              )}
             </div>
-            <p className="mt-2 text-sm text-gray-400">
-              Current categories: {categories.join(', ')}
-            </p>
+            <div className="mt-4">
+              <p className="text-sm text-gray-400 mb-2">Current categories:</p>
+              <div className="flex flex-wrap gap-2">
+                {categories.map(cat => (
+                  <div
+                    key={cat}
+                    className="flex items-center gap-2 px-3 py-1 bg-gray-800 rounded-lg"
+                  >
+                    <span>{cat}</span>
+                    <button
+                      onClick={() => handleEditCategory(cat)}
+                      className="text-blue-400 hover:text-blue-300"
+                      title="Edit category"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCategory(cat)}
+                      className="text-red-400 hover:text-red-300"
+                      title="Delete category"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 

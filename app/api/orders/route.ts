@@ -130,3 +130,29 @@ export async function PUT(request: Request) {
     );
   }
 }
+
+/**
+ * ✅ DELETE — Delete completed and cancelled orders
+ */
+export async function DELETE(request: Request) {
+  try {
+    await connectDB();
+    
+    // Delete all orders with status 'completed' or 'cancelled'
+    const result = await OrderModel.deleteMany({
+      status: { $in: ['completed', 'cancelled'] }
+    });
+
+    return NextResponse.json({ 
+      success: true, 
+      message: `Deleted ${result.deletedCount} orders`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('❌ Failed to delete orders:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to delete orders' },
+      { status: 500 }
+    );
+  }
+}

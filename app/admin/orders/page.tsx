@@ -49,6 +49,40 @@ export default function OrdersPage() {
     }
   };
 
+  const handleClearCompletedCancelled = async () => {
+    const completedCount = orders.filter(o => o.status === 'completed').length;
+    const cancelledCount = orders.filter(o => o.status === 'cancelled').length;
+    const totalCount = completedCount + cancelledCount;
+
+    if (totalCount === 0) {
+      alert('No completed or cancelled orders to clear');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to permanently delete ${totalCount} orders (${completedCount} completed, ${cancelledCount} cancelled)?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        await loadOrders();
+        setSelectedOrder(null);
+        alert(`Successfully deleted ${data.deletedCount} orders`);
+      } else {
+        alert(data.message || 'Failed to delete orders');
+      }
+    } catch (error) {
+      console.error('Failed to delete orders:', error);
+      alert('Failed to delete orders');
+    }
+  };
+
   const getStatusColor = (status: Order['status']) => {
     switch (status) {
       case 'pending': return 'bg-yellow-700';
@@ -64,12 +98,24 @@ export default function OrdersPage() {
   <div className="max-w-7xl mx-auto">
     <div className="flex justify-between items-center mb-8">
       <h1 className="text-3xl font-bold">Orders Management</h1>
-      <Link
-        href="/admin/dashboard"
-        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
-      >
-        Back to Dashboard
-      </Link>
+      <div className="flex gap-3">
+        <button
+          onClick={handleClearCompletedCancelled}
+          className="px-4 py-2 bg-red-700 hover:bg-red-800 rounded-lg transition-colors flex items-center gap-2"
+          title="Delete all completed and cancelled orders"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          Clear Completed/Cancelled
+        </button>
+        <Link
+          href="/admin/dashboard"
+          className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
+        >
+          Back to Dashboard
+        </Link>
+      </div>
     </div>
 
     {/* ✅ MongoDB Connection Status */}
