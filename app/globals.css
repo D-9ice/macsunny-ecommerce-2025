@@ -316,3 +316,65 @@ p, span, div {
 .animate-spin-pulse {
   animation: spin-pulse 3s ease-in-out infinite;
 }
+
+@keyframes treasure-float {
+  0%, 100% {
+    transform: translateY(0) scale(1) rotateY(0deg);
+  }
+  25% {
+    transform: translateY(-5px) scale(1.05) rotateY(5deg);
+  }
+  50% {
+    transform: translateY(0) scale(1) rotateY(0deg);
+  }
+  75% {
+    transform: translateY(-3px) scale(1.03) rotateY(-5deg);
+  }
+}
+
+.animate-treasure-float {
+  animation: treasure-float 4s ease-in-out infinite;
+}
+
+@keyframes light-rays {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.2) rotate(180deg);
+    opacity: 1;
+  }
+}
+
+.animate-light-rays {
+  animation: light-rays 3s ease-in-out infinite;
+}
+
+@keyframes treasure-float {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.05);
+  }
+}
+
+.animate-treasure-float {
+  animation: treasure-float 3s ease-in-out infinite;
+}
+
+@keyframes light-rays {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.2);
+  }
+}
+
+.animate-light-rays {
+  animation: light-rays 2s ease-in-out infinite;
+}
