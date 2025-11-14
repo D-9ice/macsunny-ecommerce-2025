@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { X } from 'lucide-react';
+import Image from 'next/image';
 
 export default function AdBanner() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -13,25 +14,30 @@ export default function AdBanner() {
       {/* Floating Icon */}
       <div className="relative">
         {/* Animated Glow Ring */}
-        <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-gray-300 via-gray-400 to-gray-300 opacity-60 blur-lg animate-spin-slow"></div>
+        <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-blue-300 via-cyan-400 to-blue-300 opacity-60 blur-lg animate-spin-slow"></div>
         
-        {/* Main Icon Button - 3D Silver Star */}
+        {/* Main Icon Button - Custom 3D Star */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="relative w-16 h-16 flex items-center justify-center hover:scale-110 transition-transform duration-300 animate-pulse-scale"
           aria-label="Tech-Hub DevConsults Ad"
         >
-          <span className="text-6xl drop-shadow-2xl" style={{ 
-            filter: 'drop-shadow(0 0 10px rgba(192, 192, 192, 0.8)) drop-shadow(0 0 20px rgba(255, 255, 255, 0.6))'
-          }}>
-            ⭐
-          </span>
+          <Image 
+            src="/star-icon.jpg" 
+            alt="Star" 
+            width={64} 
+            height={64}
+            className="drop-shadow-2xl"
+            style={{ 
+              filter: 'drop-shadow(0 0 10px rgba(100, 200, 255, 0.8)) drop-shadow(0 0 20px rgba(200, 220, 255, 0.6))'
+            }}
+          />
         </button>
       </div>
 
       {/* Expanded Ad Card */}
       {isExpanded && (
-        <div className="absolute top-0 right-0 w-80 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl shadow-2xl border-2 border-gray-400 p-5 animate-fade-in-up">
+        <div className="absolute top-0 right-0 w-96 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl shadow-2xl border-2 border-blue-400 p-5 animate-fade-in-up">
           {/* Close Button */}
           <button
             onClick={() => setIsExpanded(false)}
@@ -44,8 +50,13 @@ export default function AdBanner() {
           {/* Ad Content */}
           <div className="text-gray-800">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-gray-400 to-gray-600 rounded-lg flex items-center justify-center text-white">
-                <span className="text-2xl">⭐</span>
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-cyan-600 rounded-lg flex items-center justify-center p-1">
+                <Image 
+                  src="/star-icon.jpg" 
+                  alt="Star" 
+                  width={32} 
+                  height={32}
+                />
               </div>
               <div>
                 <h3 className="font-bold text-sm">Tech-Hub DevConsults</h3>
@@ -54,31 +65,30 @@ export default function AdBanner() {
             </div>
 
             <p className="text-sm mb-4 leading-relaxed">
-              Need a <span className="font-semibold text-gray-700">professional website</span> or{' '}
-              <span className="font-semibold text-gray-800">mobile app</span> for your business?
-              We build world-class solutions!
+              Need a <span className="font-semibold text-blue-700">high-quality, world-class, professionally designed</span> website and applications for your business? Reach out to Tech-Hub DevConsults at{' '}
+              <a href="mailto:techub.devconsults@gmail.com" className="text-blue-600 hover:underline font-semibold">
+                techub.devconsults@gmail.com
+              </a>
             </p>
 
-            <div className="space-y-2 text-xs mb-4">
+            <div className="space-y-2 text-xs mb-4 bg-white rounded-lg p-3 border border-blue-200">
               <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
-                <span>E-commerce & Business Websites</span>
+                <span className="text-green-500">📱</span>
+                <span className="font-semibold">WhatsApp/Call:</span>
+                <a href="tel:+233596106767" className="text-blue-600 hover:underline">+233 596 106 767</a>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-600"></span>
-                <span>Mobile Apps (iOS & Android)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
-                <span>Custom Software Solutions</span>
+                <span className="text-green-500">📱</span>
+                <span className="font-semibold">Alternative:</span>
+                <a href="tel:+233249078976" className="text-blue-600 hover:underline">+233 249 078 976</a>
               </div>
             </div>
 
             <a
               href="mailto:techub.devconsults@gmail.com"
-              className="block w-full bg-gradient-to-r from-gray-600 to-gray-800 text-white text-center py-2.5 rounded-lg font-semibold text-sm hover:from-gray-700 hover:to-gray-900 transition-all shadow-md hover:shadow-lg"
+              className="block w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-center py-2.5 rounded-lg font-semibold text-sm hover:from-blue-700 hover:to-cyan-700 transition-all shadow-md hover:shadow-lg"
             >
-              Get Started →
+              Contact Us Now →
             </a>
 
             <p className="text-xs text-gray-500 mt-3 text-center">
