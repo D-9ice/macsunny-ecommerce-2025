@@ -22,9 +22,16 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    icon: '/macsunny-logo.png',
-    apple: '/macsunny-logo.png',
-    shortcut: '/macsunny-logo.png',
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+    shortcut: '/favicon.svg',
   },
   openGraph: {
     title: 'MacSunny Electronics — Quality Electronic Components',

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <clipPath id="octagon">
+      <path d="M30 0 L70 0 L100 30 L100 70 L70 100 L30 100 L0 70 L0 30 Z"/>
+    </clipPath>
+  </defs>
+  <rect width="100" height="100" fill="#ffffff"/>
+  <g clip-path="url(#octagon)">
+    <rect width="100" height="100" fill="#0f5132"/>
+    <text x="50" y="62" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#ffffff" text-anchor="middle">M</text>
+  </g>
+  <path d="M30 0 L70 0 L100 30 L100 70 L70 100 L30 100 L0 70 L0 30 Z" fill="none" stroke="#166534" stroke-width="3"/>
+</svg>
