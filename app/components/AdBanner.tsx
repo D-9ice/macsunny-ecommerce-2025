@@ -9,7 +9,7 @@ export default function AdBanner() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed top-[220px] right-5 z-50">
+    <div className="fixed top-20 right-5 z-50">
       {/* Floating Icon */}
       <div className="relative">
         {/* Animated Glow Ring */}
