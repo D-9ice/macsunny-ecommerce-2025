@@ -272,3 +272,18 @@ p, span, div {
   animation: pulse-ring-amber 3s ease-in-out infinite;
 }
 
+/* ===========================
+   Multi-color Spinning Glow Animation
+   =========================== */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
