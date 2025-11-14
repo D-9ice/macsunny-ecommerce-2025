@@ -16,18 +16,18 @@ export default function AdBanner() {
         {/* Animated Glow Ring */}
         <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-blue-300 via-cyan-400 to-blue-300 opacity-60 blur-lg animate-spin-slow"></div>
         
-        {/* Main Icon Button - Custom 3D Star */}
+        {/* Main Icon Button - Diamond with Spin & Pulse */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="relative w-16 h-16 flex items-center justify-center hover:scale-110 transition-transform duration-300 animate-pulse-scale"
+          className="relative w-16 h-16 flex items-center justify-center hover:scale-110 transition-transform duration-300"
           aria-label="Tech-Hub DevConsults Ad"
         >
           <Image 
-            src="/star-icon.jpg" 
-            alt="Star" 
+            src="/diamond-icon.png" 
+            alt="Diamond" 
             width={64} 
             height={64}
-            className="drop-shadow-2xl"
+            className="drop-shadow-2xl animate-spin-pulse"
             style={{ 
               filter: 'drop-shadow(0 0 10px rgba(100, 200, 255, 0.8)) drop-shadow(0 0 20px rgba(200, 220, 255, 0.6))'
             }}
@@ -52,10 +52,11 @@ export default function AdBanner() {
             <div className="flex items-center gap-2 mb-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-cyan-600 rounded-lg flex items-center justify-center p-1">
                 <Image 
-                  src="/star-icon.jpg" 
-                  alt="Star" 
+                  src="/diamond-icon.png" 
+                  alt="Diamond" 
                   width={32} 
                   height={32}
+                  className="animate-spin-slow"
                 />
               </div>
               <div>
