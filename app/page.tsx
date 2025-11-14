@@ -10,6 +10,7 @@ import WhatsAppFab from './components/WhatsAppFab';
 import ComponentsMenu from './components/ComponentsMenu';
 import AIChatFab from './components/AIChatFab';
 import LocationFab from './components/LocationFab';
+import AdBanner from './components/AdBanner';
 
 const MAX_RESULTS = 25;
 
@@ -254,6 +255,7 @@ function HomeContent() {
         </div>
       )}
 
+      <AdBanner />
       <WhatsAppFab />
       <AIChatFab />
       <LocationFab />
