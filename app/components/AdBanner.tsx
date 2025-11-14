@@ -37,20 +37,20 @@ export default function AdBanner() {
 
       {/* Expanded Ad Card */}
       {isExpanded && (
-        <div className="absolute top-0 right-0 w-96 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl shadow-2xl border-2 border-blue-400 p-5 animate-fade-in-up">
+        <div className="absolute top-0 right-0 w-96 bg-white rounded-xl shadow-2xl border-2 border-blue-400 p-6 animate-fade-in-up">
           {/* Close Button */}
           <button
             onClick={() => setIsExpanded(false)}
-            className="absolute top-2 right-2 w-6 h-6 rounded-full bg-gray-800 text-white hover:bg-gray-900 transition flex items-center justify-center"
+            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-gray-800 text-white hover:bg-gray-900 transition flex items-center justify-center"
             aria-label="Close ad"
           >
-            <X size={14} />
+            <X size={16} />
           </button>
 
           {/* Ad Content */}
-          <div className="text-gray-800">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-cyan-600 rounded-lg flex items-center justify-center p-1">
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center p-2">
                 <Image 
                   src="/diamond-icon.png" 
                   alt="Diamond" 
@@ -60,39 +60,47 @@ export default function AdBanner() {
                 />
               </div>
               <div>
-                <h3 className="font-bold text-sm">Tech-Hub DevConsults</h3>
-                <p className="text-xs text-gray-600">Web & App Development</p>
+                <h3 className="font-bold text-lg text-blue-600">Tech-Hub DevConsults</h3>
+                <p className="text-sm text-gray-600">Web & App Development</p>
               </div>
             </div>
 
-            <p className="text-sm mb-4 leading-relaxed">
-              Need a <span className="font-semibold text-blue-700">high-quality, world-class, professionally designed</span> website and applications for your business? Reach out to Tech-Hub DevConsults at{' '}
-              <a href="mailto:techub.devconsults@gmail.com" className="text-blue-600 hover:underline font-semibold">
+            <p className="text-base font-bold text-blue-600 mb-5 leading-relaxed">
+              Need a high-quality, world-class, professionally designed website and applications for your business? Reach out to Tech-Hub DevConsults at{' '}
+              <a href="mailto:techub.devconsults@gmail.com" className="underline hover:text-blue-800">
                 techub.devconsults@gmail.com
               </a>
             </p>
 
-            <div className="space-y-2 text-xs mb-4 bg-white rounded-lg p-3 border border-blue-200">
-              <div className="flex items-center gap-2">
-                <span className="text-green-500">📱</span>
-                <span className="font-semibold">WhatsApp/Call:</span>
-                <a href="tel:+233596106767" className="text-blue-600 hover:underline">+233 596 106 767</a>
+            <div className="space-y-3 mb-5">
+              <div className="flex items-center gap-3 bg-blue-50 p-3 rounded-lg">
+                <span className="text-2xl">📱</span>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-600 font-semibold mb-1">WhatsApp/Call</p>
+                  <a href="tel:+233596106767" className="text-base font-bold text-blue-600 hover:underline block">
+                    +233 596 106 767
+                  </a>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-green-500">📱</span>
-                <span className="font-semibold">Alternative:</span>
-                <a href="tel:+233249078976" className="text-blue-600 hover:underline">+233 249 078 976</a>
+              <div className="flex items-center gap-3 bg-blue-50 p-3 rounded-lg">
+                <span className="text-2xl">📱</span>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-600 font-semibold mb-1">Alternative</p>
+                  <a href="tel:+233249078976" className="text-base font-bold text-blue-600 hover:underline block">
+                    +233 249 078 976
+                  </a>
+                </div>
               </div>
             </div>
 
             <a
               href="mailto:techub.devconsults@gmail.com"
-              className="block w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-center py-2.5 rounded-lg font-semibold text-sm hover:from-blue-700 hover:to-cyan-700 transition-all shadow-md hover:shadow-lg"
+              className="block w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-center py-3 rounded-lg font-bold text-base hover:from-blue-700 hover:to-cyan-700 transition-all shadow-md hover:shadow-lg"
             >
               Contact Us Now →
             </a>
 
-            <p className="text-xs text-gray-500 mt-3 text-center">
+            <p className="text-sm text-gray-500 mt-4 text-center font-semibold">
               📧 techub.devconsults@gmail.com
             </p>
           </div>
