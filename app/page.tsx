@@ -141,7 +141,7 @@ function HomeContent() {
   };
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6">
+    <main className="mx-auto max-w-6xl px-4 py-6 pb-64">
       <form className="mb-6 flex flex-col gap-3 md:flex-row md:items-center" onSubmit={handleSearch}>
         <input
           name="q"
