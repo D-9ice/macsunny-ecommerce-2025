@@ -8,14 +8,14 @@ export default function LocationFab() {
   return (
     <>
       {/* Multi-color Spinning Glow Effect */}
-      <div className="fixed bottom-5 right-[176px] w-16 h-16 rounded-full animate-spin-slow z-40">
+      <div className="fixed bottom-[152px] right-5 w-16 h-16 rounded-full animate-spin-slow z-40">
         <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 via-green-500 to-yellow-400 opacity-75 blur-md"></div>
       </div>
 
       {/* Floating Location Button with Google Maps Colors */}
       <button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-5 right-44 bg-white hover:bg-gray-50 text-gray-800 p-4 rounded-full shadow-lg z-50 transition focus:outline-none focus:ring-2 focus:ring-blue-400 w-16 h-16 flex items-center justify-center border-2 border-gray-200"
+        className="fixed bottom-[152px] right-5 bg-white hover:bg-gray-50 text-gray-800 p-4 rounded-full shadow-lg z-50 transition focus:outline-none focus:ring-2 focus:ring-blue-400 w-16 h-16 flex items-center justify-center border-2 border-gray-200"
         aria-label="View Location"
       >
         {open ? (
@@ -35,7 +35,7 @@ export default function LocationFab() {
 
       {/* Animated Pop-up */}
       {open && (
-        <div className="fixed bottom-24 right-44 z-[60] w-64 rounded-xl force-bg-white p-4 shadow-2xl border-2 border-blue-400 animate-fade-in-up">
+        <div className="fixed bottom-[176px] right-5 z-[60] w-64 rounded-xl force-bg-white p-4 shadow-2xl border-2 border-blue-400 animate-fade-in-up">
           <h3 className="mb-2 font-bold force-black">Find Us</h3>
           <p className="mb-3 text-sm force-gray-dark">
             ZONGOLANE ACCRA CENTRAL, ACCRA, GHANA
