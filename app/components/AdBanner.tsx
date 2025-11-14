@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { X, Code2, Sparkles } from 'lucide-react';
+import { X, Star } from 'lucide-react';
 
 export default function AdBanner() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -33,26 +33,25 @@ export default function AdBanner() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed top-5 right-5 z-50">
+    <div className="fixed top-32 right-5 z-50">
       {/* Floating Icon */}
       <div className="relative">
         {/* Animated Glow Ring */}
-        <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-orange-400 via-red-500 to-pink-500 opacity-75 blur-lg animate-spin-slow"></div>
+        <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400 opacity-75 blur-lg animate-spin-slow"></div>
         
         {/* Main Icon Button */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="relative w-14 h-14 bg-gradient-to-br from-orange-500 to-pink-600 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-110 transition-transform duration-300"
+          className="relative w-14 h-14 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-110 transition-transform duration-300"
           aria-label="Tech-Hub DevConsults Ad"
         >
-          <Code2 className="w-7 h-7" />
-          <Sparkles className="w-3 h-3 absolute top-1 right-1 animate-pulse" />
+          <Star className="w-7 h-7 fill-white animate-pulse-scale" />
         </button>
       </div>
 
       {/* Expanded Ad Card */}
       {isExpanded && (
-        <div className="absolute top-0 right-0 w-80 bg-gradient-to-br from-orange-50 to-pink-50 rounded-xl shadow-2xl border-2 border-orange-300 p-5 animate-fade-in-up">
+        <div className="absolute top-0 right-0 w-80 bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl shadow-2xl border-2 border-yellow-400 p-5 animate-fade-in-up">
           {/* Close Button */}
           <button
             onClick={() => setIsExpanded(false)}
@@ -65,8 +64,8 @@ export default function AdBanner() {
           {/* Ad Content */}
           <div className="text-gray-800">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-pink-600 rounded-lg flex items-center justify-center text-white">
-                <Code2 size={20} />
+              <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-lg flex items-center justify-center text-white">
+                <Star size={20} className="fill-white" />
               </div>
               <div>
                 <h3 className="font-bold text-sm">Tech-Hub DevConsults</h3>
@@ -75,29 +74,29 @@ export default function AdBanner() {
             </div>
 
             <p className="text-sm mb-4 leading-relaxed">
-              Need a <span className="font-semibold text-orange-600">professional website</span> or{' '}
-              <span className="font-semibold text-pink-600">mobile app</span> for your business?
+              Need a <span className="font-semibold text-yellow-600">professional website</span> or{' '}
+              <span className="font-semibold text-amber-600">mobile app</span> for your business?
               We build world-class solutions!
             </p>
 
             <div className="space-y-2 text-xs mb-4">
               <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
                 <span>E-commerce & Business Websites</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-pink-500"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                 <span>Mobile Apps (iOS & Android)</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
                 <span>Custom Software Solutions</span>
               </div>
             </div>
 
             <a
               href="mailto:techub.devconsults@gmail.com"
-              className="block w-full bg-gradient-to-r from-orange-500 to-pink-600 text-white text-center py-2.5 rounded-lg font-semibold text-sm hover:from-orange-600 hover:to-pink-700 transition-all shadow-md hover:shadow-lg"
+              className="block w-full bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-center py-2.5 rounded-lg font-semibold text-sm hover:from-yellow-500 hover:to-amber-600 transition-all shadow-md hover:shadow-lg"
             >
               Get Started →
             </a>
