@@ -12,7 +12,7 @@ import AIChatFab from './components/AIChatFab';
 import LocationFab from './components/LocationFab';
 import AdBanner from './components/AdBanner';
 
-const MAX_RESULTS = 25;
+const MAX_RESULTS = 100;
 
 function filterProducts(query: string, productsList: Product[]): Product[] {
   const trimmed = query.trim().toLowerCase();
