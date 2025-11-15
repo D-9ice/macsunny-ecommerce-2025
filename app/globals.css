@@ -319,21 +319,22 @@ p, span, div {
 
 @keyframes treasure-float {
   0%, 100% {
-    transform: translateY(0) scale(1) rotateY(0deg);
+    transform: translateY(0px) rotateY(-15deg) scale(1);
   }
   25% {
-    transform: translateY(-5px) scale(1.05) rotateY(5deg);
+    transform: translateY(-8px) rotateY(0deg) scale(1.05);
   }
   50% {
-    transform: translateY(0) scale(1) rotateY(0deg);
+    transform: translateY(-4px) rotateY(15deg) scale(1);
   }
   75% {
-    transform: translateY(-3px) scale(1.03) rotateY(-5deg);
+    transform: translateY(-6px) rotateY(0deg) scale(1.03);
   }
 }
 
 .animate-treasure-float {
   animation: treasure-float 4s ease-in-out infinite;
+  transform-style: preserve-3d;
 }
 
 @keyframes light-rays {
@@ -349,6 +350,21 @@ p, span, div {
 
 .animate-light-rays {
   animation: light-rays 3s ease-in-out infinite;
+}
+
+@keyframes treasure-burst {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) translateY(-50px) rotateX(-30deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.1) translateY(10px) rotateX(5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0) rotateX(0deg);
+  }
 }
 
 @keyframes treasure-float {
