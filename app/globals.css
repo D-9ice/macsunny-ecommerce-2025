@@ -317,24 +317,39 @@ p, span, div {
   animation: spin-pulse 3s ease-in-out infinite;
 }
 
-@keyframes treasure-float {
-  0%, 100% {
-    transform: translateY(0px) rotateY(-15deg) scale(1);
+@keyframes treasure-spin {
+  0% {
+    transform: translateY(0px) rotateY(0deg) scale(1);
   }
   25% {
-    transform: translateY(-8px) rotateY(0deg) scale(1.05);
+    transform: translateY(-8px) rotateY(90deg) scale(1.05);
   }
   50% {
-    transform: translateY(-4px) rotateY(15deg) scale(1);
+    transform: translateY(-4px) rotateY(180deg) scale(1);
   }
   75% {
-    transform: translateY(-6px) rotateY(0deg) scale(1.03);
+    transform: translateY(-6px) rotateY(270deg) scale(1.03);
+  }
+  100% {
+    transform: translateY(0px) rotateY(360deg) scale(1);
   }
 }
 
 .animate-treasure-float {
-  animation: treasure-float 4s ease-in-out infinite;
+  animation: treasure-spin 6s linear infinite;
   transform-style: preserve-3d;
+}
+
+@keyframes chest-open {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.8) rotate(15deg);
+  }
+  100% {
+    transform: scale(1.6) rotate(12deg);
+  }
 }
 
 @keyframes light-rays {
@@ -355,15 +370,19 @@ p, span, div {
 @keyframes treasure-burst {
   0% {
     opacity: 0;
-    transform: scale(0.3) translateY(-50px) rotateX(-30deg);
+    transform: scale(0) translateY(-80px) translateX(60px) rotate(-20deg);
   }
-  60% {
+  40% {
+    opacity: 0.7;
+    transform: scale(0.5) translateY(-40px) translateX(30px) rotate(-10deg);
+  }
+  70% {
     opacity: 1;
-    transform: scale(1.1) translateY(10px) rotateX(5deg);
+    transform: scale(1.15) translateY(10px) translateX(-10px) rotate(5deg);
   }
   100% {
     opacity: 1;
-    transform: scale(1) translateY(0) rotateX(0deg);
+    transform: scale(1) translateY(0) translateX(0) rotate(0deg);
   }
 }
 

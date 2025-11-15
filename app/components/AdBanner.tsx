@@ -24,7 +24,7 @@ export default function AdBanner() {
         {/* Treasure Chest Button */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="relative w-20 h-20 flex items-center justify-center hover:scale-110 transition-all duration-500 animate-treasure-float cursor-pointer"
+          className={`relative w-20 h-20 flex items-center justify-center hover:scale-110 transition-all duration-500 cursor-pointer ${!isExpanded ? 'animate-treasure-float' : ''}`}
           aria-label="Tech-Hub DevConsults Ad - Click to open treasure!"
           style={{ transformStyle: 'preserve-3d' }}
         >
@@ -33,10 +33,11 @@ export default function AdBanner() {
             alt="Treasure Chest" 
             width={80} 
             height={80}
-            className={`drop-shadow-2xl transition-all duration-700 ${isExpanded ? 'scale-150 rotate-12' : ''}`}
+            className="drop-shadow-2xl"
             style={{ 
               filter: 'drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 40px rgba(255, 223, 0, 0.6))',
-              transformStyle: 'preserve-3d'
+              transformStyle: 'preserve-3d',
+              animation: isExpanded ? 'chest-open 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards' : undefined
             }}
           />
         </button>
