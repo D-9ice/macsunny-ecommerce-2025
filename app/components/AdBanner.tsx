@@ -10,30 +10,30 @@ export default function AdBanner() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed top-20 right-5 z-50" style={{ perspective: '1000px' }}>
+    <div className="fixed top-16 right-2 md:top-20 md:right-5 z-40" style={{ perspective: '1000px' }}>
       {/* Floating Treasure Chest */}
       <div className="relative" style={{ transformStyle: 'preserve-3d' }}>
         {/* Glowing Light Rays */}
-        <div className="absolute -inset-6 animate-light-rays pointer-events-none">
+        <div className="absolute -inset-4 md:-inset-6 animate-light-rays pointer-events-none">
           <div className="absolute inset-0 bg-gradient-radial from-yellow-400/40 via-yellow-300/20 to-transparent blur-2xl"></div>
         </div>
         
         {/* Pulsating Glow Ring */}
-        <div className="absolute -inset-4 rounded-full bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400 opacity-50 blur-xl animate-spin-slow pointer-events-none"></div>
+        <div className="absolute -inset-3 md:-inset-4 rounded-full bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400 opacity-50 blur-xl animate-spin-slow pointer-events-none"></div>
         
         {/* Treasure Chest Button */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className={`relative w-20 h-20 flex items-center justify-center hover:scale-110 transition-all duration-500 cursor-pointer ${!isExpanded ? 'animate-treasure-float' : ''}`}
+          className={`relative w-14 h-14 md:w-20 md:h-20 flex items-center justify-center hover:scale-110 transition-all duration-500 cursor-pointer ${!isExpanded ? 'animate-treasure-float' : ''}`}
           aria-label="Tech-Hub DevConsults Ad - Click to open treasure!"
           style={{ transformStyle: 'preserve-3d' }}
         >
           <Image 
             src="/treasure-chest.png" 
             alt="Treasure Chest" 
-            width={80} 
-            height={80}
-            className="drop-shadow-2xl"
+            width={56} 
+            height={56}
+            className="md:w-20 md:h-20 drop-shadow-2xl"
             style={{ 
               filter: 'drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 40px rgba(255, 223, 0, 0.6))',
               transformStyle: 'preserve-3d',
@@ -45,7 +45,7 @@ export default function AdBanner() {
 
       {/* Treasure Box Opening - Ad Card Bursts Out! */}
       {isExpanded && (
-        <div className="absolute top-0 right-0 w-96 bg-gradient-to-br from-yellow-50 via-white to-amber-50 rounded-xl shadow-2xl border-4 border-yellow-400 p-6 origin-top-right"
+        <div className="absolute top-0 right-0 w-80 md:w-96 bg-gradient-to-br from-yellow-50 via-white to-amber-50 rounded-xl shadow-2xl border-4 border-yellow-400 p-4 md:p-6 origin-top-right"
              style={{
                animation: 'treasure-burst 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                transformOrigin: 'top right'
