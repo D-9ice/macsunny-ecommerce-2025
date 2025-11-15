@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Product, allProducts, writeAdmin, readAdmin, readCategories, writeCategories } from '@/app/lib/products';
 import MongoStatus from '@/app/components/MongoStatus';
+import BulkImport from '@/app/components/BulkImport';
 
 export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -18,6 +19,7 @@ export default function InventoryPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('/logo.svg');
   const [isDragging, setIsDragging] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -339,6 +341,12 @@ export default function InventoryPage() {
         <h1 className="text-3xl font-bold">Inventory Management</h1>
         <div className="flex gap-3">
           <button
+            onClick={() => setShowBulkImport(!showBulkImport)}
+            className="px-4 py-2 bg-purple-700 hover:bg-purple-800 rounded-lg transition-colors font-semibold"
+          >
+            {showBulkImport ? 'Hide Auto-Populator' : '🚀 Auto-Populator'}
+          </button>
+          <button
             onClick={() => setShowCategoryForm(!showCategoryForm)}
             className="px-4 py-2 bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors"
           >
@@ -370,6 +378,10 @@ export default function InventoryPage() {
         <MongoStatus />
       </div>
 
+      {/* 🚀 Bulk Import Auto-Populator */}
+      {showBulkImport && (
+        <BulkImport onImportComplete={loadProducts} />
+      )}
 
         {showCategoryForm && (
           <div className="mb-8 bg-blue-900/20 border border-blue-700 rounded-xl p-6">
