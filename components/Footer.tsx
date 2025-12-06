@@ -9,28 +9,11 @@ export default function Footer() {
           (+233) 0243380902 / 0249135208 / 0551507985 • Email: Macsunny2025@gmail.com
         </p>
 
-        {/* Placeholders restored */}
-        <div className="flex flex-wrap justify-center gap-3">
-          <button
-            disabled
-            className="rounded-full border border-dashed border-gray-500/70 px-4 py-1 text-sm opacity-80"
-            title="Coming soon"
-          >
-            🤖 AI Assistant (coming soon)
-          </button>
-          <button
-            disabled
-            className="rounded-full border border-dashed border-gray-500/70 px-4 py-1 text-sm opacity-80"
-            title="Coming soon"
-          >
-            📍 Geolocation & Delivery (coming soon)
-          </button>
-        </div>
-
         <p>
           Designed and created for <span className="font-semibold">MacSunny Electronics</span> by
-          <span className="font-semibold"> Tech-Hub DevConsults</span>. Email:{' '}
-          <a href="mailto:totallytechhub@gmail.com" className="underline">techub.devconsults@gmail.com</a> • Phone:
+          <span className="font-semibold"> Frontier DevConsults</span>. Website:{' '}
+          <a href="https://www.frontier-devconsults.com" target="_blank" rel="noopener noreferrer" className="underline">www.frontier-devconsults.com</a> • Email:{' '}
+          <a href="mailto:info@frontier-devconsults.com" className="underline">info@frontier-devconsults.com</a> • Phone:
           (+233)0596106767 / (+233)0249078976 / (+233)0244809627
         </p>
 

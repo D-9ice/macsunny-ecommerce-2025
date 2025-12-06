@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import VisitCounter from '@/app/components/VisitCounter';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -101,6 +102,11 @@ export default function AdminDashboard() {
               Settings
             </Link>
           </div>
+        </div>
+
+        {/* Visit Counter Analytics */}
+        <div className="mt-6">
+          <VisitCounter />
         </div>
 
         <div className="mt-8">

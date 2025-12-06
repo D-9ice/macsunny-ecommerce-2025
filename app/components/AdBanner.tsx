@@ -25,7 +25,7 @@ export default function AdBanner() {
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className={`relative w-14 h-14 md:w-20 md:h-20 flex items-center justify-center hover:scale-110 transition-all duration-500 cursor-pointer ${!isExpanded ? 'animate-treasure-float' : ''}`}
-          aria-label="Tech-Hub DevConsults Ad - Click to open treasure!"
+          aria-label="Frontier DevConsults - Click to open treasure!"
           style={{ transformStyle: 'preserve-3d' }}
         >
           <Image 
@@ -45,7 +45,7 @@ export default function AdBanner() {
 
       {/* Treasure Box Opening - Ad Card Bursts Out! */}
       {isExpanded && (
-        <div className="absolute top-0 right-0 w-80 md:w-96 bg-gradient-to-br from-yellow-50 via-white to-amber-50 rounded-xl shadow-2xl border-4 border-yellow-400 p-4 md:p-6 origin-top-right"
+        <div className="absolute top-0 right-0 w-80 md:w-96 bg-white rounded-xl shadow-2xl border-2 border-blue-300 p-4 md:p-5 origin-top-right"
              style={{
                animation: 'treasure-burst 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                transformOrigin: 'top right'
@@ -56,7 +56,7 @@ export default function AdBanner() {
               e.stopPropagation();
               setIsExpanded(false);
             }}
-            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-gray-800 text-white hover:bg-gray-900 transition flex items-center justify-center z-10"
+            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition flex items-center justify-center z-10 shadow-md"
             aria-label="Close treasure"
           >
             <X size={16} />
@@ -64,46 +64,81 @@ export default function AdBanner() {
 
           {/* Ad Content */}
           <div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-xl flex items-center justify-center p-2 shadow-lg">
-                <Image 
-                  src="/treasure-chest.png" 
-                  alt="Treasure" 
-                  width={40} 
-                  height={40}
-                  className="animate-pulse"
-                />
-              </div>
-              <div>
-                <h3 className="font-bold text-xl bg-gradient-to-r from-yellow-600 to-amber-700 bg-clip-text text-transparent">
-                  Tech-Hub DevConsults
-                </h3>
-                <p className="text-sm font-semibold text-amber-700">Unlock World-Class Solutions</p>
-              </div>
+            {/* Logo at Top Left */}
+            <div className="flex items-start mb-2">
+              <Image 
+                src="/frontier-logo.jpg" 
+                alt="Frontier DevConsults Logo" 
+                width={60} 
+                height={60}
+                className="object-contain"
+              />
             </div>
 
-            <p className="text-base font-bold leading-relaxed mb-5" style={{ color: '#B45309' }}>
-              Need a high-quality, world-class, professionally designed website and applications for your business? Reach out to Tech-Hub DevConsults at{' '}
-              <a href="mailto:techub.devconsults@gmail.com" className="underline hover:text-amber-800" style={{ color: '#92400E' }}>
-                techub.devconsults@gmail.com
-              </a>
-            </p>
+            {/* Line separator */}
+            <div className="border-b border-blue-300 mb-3"></div>
 
-            <div className="space-y-3 mb-5">
-              <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-100 to-amber-100 p-3 rounded-lg border border-yellow-300">
-                <span className="text-2xl">📱</span>
-                <div className="flex-1">
-                  <p className="text-xs text-amber-700 font-semibold mb-1">WhatsApp/Call</p>
-                  <a href="tel:+233596106767" className="text-base font-bold hover:underline block" style={{ color: '#92400E' }}>
+            {/* Invitation Message - HIGHLY VISIBLE */}
+            <div className="mb-2">
+              <p className="text-sm font-bold leading-snug" style={{ color: '#1e40af' }}>
+                Congratulations! You&apos;ve unlocked exclusive access to world-class development services. Get in touch with us for your professional, world-class apps or website, or visit our website/app store to request a build.
+              </p>
+            </div>
+
+            <div className="space-y-1.5 mb-3">
+              {/* Website */}
+              <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition">
+                <span className="text-base">🌐</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-blue-700 font-semibold mb-0.5">Website</p>
+                  <a 
+                    href="https://www.frontier-devconsults.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold text-blue-800 hover:text-blue-900 hover:underline block truncate"
+                  >
+                    www.frontier-devconsults.com
+                  </a>
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition">
+                <span className="text-base">✉️</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-blue-700 font-semibold mb-0.5">Email</p>
+                  <a 
+                    href="mailto:info@frontier-devconsults.com" 
+                    className="text-xs font-bold text-blue-800 hover:text-blue-900 hover:underline block truncate"
+                  >
+                    info@frontier-devconsults.com
+                  </a>
+                </div>
+              </div>
+
+              {/* Phone 1 */}
+              <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition">
+                <span className="text-base">📱</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-blue-700 font-semibold mb-0.5">WhatsApp/Call</p>
+                  <a 
+                    href="tel:+233596106767" 
+                    className="text-xs font-bold text-blue-800 hover:text-blue-900 hover:underline block"
+                  >
                     +233 596 106 767
                   </a>
                 </div>
               </div>
-              <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-100 to-amber-100 p-3 rounded-lg border border-yellow-300">
-                <span className="text-2xl">📱</span>
-                <div className="flex-1">
-                  <p className="text-xs text-amber-700 font-semibold mb-1">Alternative</p>
-                  <a href="tel:+233249078976" className="text-base font-bold hover:underline block" style={{ color: '#92400E' }}>
+
+              {/* Phone 2 */}
+              <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition">
+                <span className="text-base">📞</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-blue-700 font-semibold mb-0.5">Alternative</p>
+                  <a 
+                    href="tel:+233249078976" 
+                    className="text-xs font-bold text-blue-800 hover:text-blue-900 hover:underline block"
+                  >
                     +233 249 078 976
                   </a>
                 </div>
@@ -111,10 +146,10 @@ export default function AdBanner() {
             </div>
 
             <a
-              href="mailto:techub.devconsults@gmail.com"
-              className="block w-full bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 text-white text-center py-3 rounded-lg font-bold text-base hover:from-yellow-600 hover:to-amber-700 transition-all shadow-lg hover:shadow-xl"
+              href="mailto:info@frontier-devconsults.com"
+              className="block w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-center py-2 rounded-lg font-bold text-sm hover:from-blue-700 hover:to-indigo-800 transition-all shadow-lg hover:shadow-xl"
             >
-              Unlock Your Treasure Now →
+              Get Started Now →
             </a>
           </div>
         </div>

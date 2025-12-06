@@ -17,7 +17,7 @@ export default function Navbar() {
             MACSUNNY ELECTRONICS
           </p>
           <p className="mt-[1px] whitespace-nowrap text-[clamp(4px,2vw,18px)] uppercase leading-none tracking-wide text-white/90">
-            Home of high quality electronics components & accessories
+            Home of high quality electronics components &amp; accessories
           </p>
         </div>
       </div>

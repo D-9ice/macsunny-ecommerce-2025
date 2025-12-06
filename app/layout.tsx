@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import { ThemeProvider } from './context/ThemeContext';
 import { ReactQueryProvider } from './providers/ReactQueryProvider';
 import ToastContainer from './components/Toast';
+import VisitTracker from './components/VisitTracker';
 
 export const metadata: Metadata = {
   title: 'MacSunny Electronics — Quality Electronic Components & Accessories',
@@ -65,6 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="transition-colors duration-300">
         <ReactQueryProvider>
           <ThemeProvider>
+            <VisitTracker />
             <Navbar />
             <div className="mx-auto max-w-6xl px-4 py-6">{children}</div>
             <Footer />

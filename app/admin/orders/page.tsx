@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Order, getAllOrders, updateOrderStatus } from '@/app/lib/orders';
 import MongoStatus from '@/app/components/MongoStatus';
+import DeliveryTracker from '@/app/components/DeliveryTracker';
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -197,6 +198,11 @@ export default function OrdersPage() {
                         <p>{selectedOrder.customerAddress}</p>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Delivery Tracking */}
+                  <div className="mb-6">
+                    <DeliveryTracker order={selectedOrder} />
                   </div>
 
                   {/* Order Items */}

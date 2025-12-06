@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Product, allProducts, writeAdmin, readAdmin, readCategories, writeCategories } from '@/app/lib/products';
 import MongoStatus from '@/app/components/MongoStatus';
-import BulkImport from '@/app/components/BulkImport';
-import AutoImageMatcher from '@/app/components/AutoImageMatcher';
+import SmartProductManager from '@/app/components/SmartProductManager';
+import ComponentSearchBar from '@/app/components/ComponentSearchBar';
 
 export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -20,8 +20,7 @@ export default function InventoryPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('/logo.svg');
   const [isDragging, setIsDragging] = useState(false);
-  const [showBulkImport, setShowBulkImport] = useState(false);
-  const [showAutoImageMatcher, setShowAutoImageMatcher] = useState(false);
+  const [showSmartManager, setShowSmartManager] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -343,16 +342,10 @@ export default function InventoryPage() {
         <h1 className="text-3xl font-bold">Inventory Management</h1>
         <div className="flex gap-3">
           <button
-            onClick={() => setShowAutoImageMatcher(!showAutoImageMatcher)}
-            className="px-4 py-2 bg-indigo-700 hover:bg-indigo-800 rounded-lg transition-colors font-semibold"
+            onClick={() => setShowSmartManager(!showSmartManager)}
+            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg transition-all font-semibold flex items-center gap-2"
           >
-            {showAutoImageMatcher ? 'Hide Image Matcher' : '🎨 Auto Images'}
-          </button>
-          <button
-            onClick={() => setShowBulkImport(!showBulkImport)}
-            className="px-4 py-2 bg-purple-700 hover:bg-purple-800 rounded-lg transition-colors font-semibold"
-          >
-            {showBulkImport ? 'Hide Auto-Populator' : '🚀 Auto-Populator'}
+            {showSmartManager ? 'Hide Smart Manager' : '⚡ Smart Manager'}
           </button>
           <button
             onClick={() => setShowCategoryForm(!showCategoryForm)}
@@ -386,14 +379,26 @@ export default function InventoryPage() {
         <MongoStatus />
       </div>
 
-      {/* 🎨 Auto Image Matcher */}
-      {showAutoImageMatcher && (
-        <AutoImageMatcher onComplete={loadProducts} />
-      )}
+      {/* 🔍 Component Search Bar */}
+      <div className="mb-6">
+        <ComponentSearchBar
+          products={products}
+          onProductSelect={(product) => {
+            setEditingProduct(product);
+            setFormData(product);
+            setImagePreview(product.image || '/logo.svg');
+            setShowAddForm(true);
+          }}
+          onBulkEdit={(selectedProducts) => {
+            // Handle bulk edit - you can implement a bulk edit modal here
+            alert(`Bulk editing ${selectedProducts.length} products (feature coming soon)`);
+          }}
+        />
+      </div>
 
-      {/* 🚀 Bulk Import Auto-Populator */}
-      {showBulkImport && (
-        <BulkImport onImportComplete={loadProducts} />
+      {/* ⚡ Smart Product Manager - Unified Tool */}
+      {showSmartManager && (
+        <SmartProductManager onComplete={loadProducts} />
       )}
 
       {showCategoryForm && (

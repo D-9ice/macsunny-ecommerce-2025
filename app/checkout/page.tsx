@@ -9,6 +9,8 @@ import {
   cartTotal,
   clearCart,
 } from '@/app/lib/cart';
+import DeliveryLocationPicker from '@/app/components/DeliveryLocationPicker';
+import type { Location } from '@/app/lib/geolocation';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -20,6 +22,11 @@ export default function CheckoutPage() {
     email: '',
     address: '',
   });
+  // Delivery state
+  const [wantsDelivery, setWantsDelivery] = useState(false);
+  const [deliveryLocation, setDeliveryLocation] = useState<Location | null>(null);
+  const [deliveryInfo, setDeliveryInfo] = useState<any>(null);
+  
   // Keep customName and customPhone for later review
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -29,6 +36,9 @@ export default function CheckoutPage() {
   }, []);
 
   const total = cartTotal(items);
+  const finalTotal = wantsDelivery && deliveryInfo && !deliveryInfo.freeDelivery
+    ? total + deliveryInfo.deliveryCost
+    : total;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,11 +54,16 @@ export default function CheckoutPage() {
         },
         body: JSON.stringify({
           items,
-          total,
+          total: finalTotal,
           customerName: form.name,
           customerEmail: form.email || undefined,
           customerPhone: form.phone,
-          customerAddress: form.address || undefined,
+          customerAddress: wantsDelivery && deliveryLocation 
+            ? deliveryLocation.address 
+            : (form.address || 'Pickup at store'),
+          deliveryRequested: wantsDelivery,
+          deliveryLocation: wantsDelivery ? deliveryLocation : undefined,
+          deliveryInfo: wantsDelivery ? deliveryInfo : undefined,
         }),
       });
 
@@ -89,9 +104,25 @@ export default function CheckoutPage() {
               ))}
             </ul>
             <div className="mt-3 flex justify-between border-t pt-3 font-bold">
-              <span>Total</span>
+              <span>Subtotal</span>
               <span>GHS {total.toFixed(2)}</span>
             </div>
+            {wantsDelivery && deliveryInfo && (
+              <>
+                <div className="mt-2 flex justify-between text-sm">
+                  <span>Delivery Cost</span>
+                  {deliveryInfo.freeDelivery ? (
+                    <span className="text-green-600 font-semibold">FREE</span>
+                  ) : (
+                    <span>GHS {deliveryInfo.deliveryCost.toFixed(2)}</span>
+                  )}
+                </div>
+                <div className="mt-2 flex justify-between border-t pt-2 font-bold text-lg">
+                  <span>Total</span>
+                  <span>GHS {finalTotal.toFixed(2)}</span>
+                </div>
+              </>
+            )}
           </section>
 
           <form onSubmit={onSubmit} className="space-y-4 rounded-lg border p-4">
@@ -125,16 +156,65 @@ export default function CheckoutPage() {
                 placeholder="john@example.com"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-black">Delivery Address</label>
-              <textarea
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-black"
-                rows={3}
-                placeholder="Enter your delivery address"
-              />
+
+            {/* Delivery Option Toggle */}
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={wantsDelivery}
+                    onChange={(e) => setWantsDelivery(e.target.checked)}
+                    className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500 mr-3"
+                  />
+                  <span className="text-sm font-medium text-black">
+                    📦 I want delivery service
+                  </span>
+                </label>
+                {wantsDelivery && deliveryInfo && (
+                  <span className="text-xs text-gray-600">
+                    Est. {deliveryInfo.estimatedTime}
+                  </span>
+                )}
+              </div>
+
+              {wantsDelivery ? (
+                <DeliveryLocationPicker
+                  cartTotal={total}
+                  onLocationSelected={(location, info) => {
+                    setDeliveryLocation(location);
+                    setDeliveryInfo(info);
+                  }}
+                />
+              ) : (
+                <div className="bg-gray-100 rounded-lg p-4 text-sm text-gray-700">
+                  <p className="flex items-center gap-2">
+                    <span>🏪</span>
+                    <span>You will pick up your order at the store</span>
+                  </p>
+                  <p className="mt-2 text-xs text-gray-600">
+                    MacSunny Electronics, Accra, Ghana
+                  </p>
+                </div>
+              )}
             </div>
+
+            {/* Optional Address field (for notes/additional info) */}
+            {!wantsDelivery && (
+              <div>
+                <label className="block text-sm font-medium mb-1 text-black">
+                  Additional Notes (optional)
+                </label>
+                <textarea
+                  value={form.address}
+                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg text-black"
+                  rows={2}
+                  placeholder="Any special instructions..."
+                />
+              </div>
+            )}
+
             <button
               type="submit"
               className="w-full py-3 bg-green-700 text-white font-semibold rounded-lg hover:bg-green-800 disabled:bg-gray-400 transition-colors"
