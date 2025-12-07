@@ -93,6 +93,17 @@ export default function AdminDashboard() {
           </div>
 
           <div className="bg-gray-900 rounded-xl p-6">
+            <h3 className="text-lg font-semibold mb-2">🚚 Delivery Settings</h3>
+            <p className="text-gray-400 mb-4">Manage delivery zones & pricing</p>
+            <Link
+              href="/admin/delivery-settings"
+              className="inline-block px-4 py-2 bg-green-700 hover:bg-green-800 rounded-lg transition-colors"
+            >
+              Configure Delivery
+            </Link>
+          </div>
+
+          <div className="bg-gray-900 rounded-xl p-6">
             <h3 className="text-lg font-semibold mb-2">Settings</h3>
             <p className="text-gray-400 mb-4">Configure your store</p>
             <Link

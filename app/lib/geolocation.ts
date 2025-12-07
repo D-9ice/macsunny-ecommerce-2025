@@ -12,11 +12,13 @@ export interface Location {
 }
 
 export interface DeliveryZone {
+  _id?: string;
   name: string;
   basePrice: number;
   pricePerKm: number;
   maxDistance: number;
   regions: string[];
+  enabled?: boolean;
 }
 
 // MacSunny store location (Accra, Ghana - update with actual coordinates)
@@ -28,14 +30,15 @@ export const STORE_LOCATION: Location = {
   region: 'Greater Accra',
 };
 
-// Delivery zones for Ghana
-export const DELIVERY_ZONES: DeliveryZone[] = [
+// Default delivery zones (fallback if database is unavailable)
+const DEFAULT_DELIVERY_ZONES: DeliveryZone[] = [
   {
     name: 'Accra Metro',
     basePrice: 10,
     pricePerKm: 2,
     maxDistance: 15,
     regions: ['Greater Accra', 'Accra'],
+    enabled: true,
   },
   {
     name: 'Greater Accra Extended',
@@ -43,6 +46,7 @@ export const DELIVERY_ZONES: DeliveryZone[] = [
     pricePerKm: 3,
     maxDistance: 50,
     regions: ['Tema', 'Kasoa', 'Madina', 'Spintex'],
+    enabled: true,
   },
   {
     name: 'Regional Capitals',
@@ -50,6 +54,7 @@ export const DELIVERY_ZONES: DeliveryZone[] = [
     pricePerKm: 5,
     maxDistance: 300,
     regions: ['Kumasi', 'Takoradi', 'Cape Coast', 'Tamale', 'Sunyani', 'Koforidua'],
+    enabled: true,
   },
   {
     name: 'Other Regions',
@@ -57,8 +62,47 @@ export const DELIVERY_ZONES: DeliveryZone[] = [
     pricePerKm: 7,
     maxDistance: 500,
     regions: [],
+    enabled: true,
   },
 ];
+
+// Cache for delivery settings
+let cachedSettings: { zones: DeliveryZone[]; freeDeliveryThreshold: number; timestamp: number } | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Fetch delivery zones from database
+ */
+async function fetchDeliverySettings(): Promise<{ zones: DeliveryZone[]; freeDeliveryThreshold: number }> {
+  // Return cached settings if valid
+  if (cachedSettings && Date.now() - cachedSettings.timestamp < CACHE_DURATION) {
+    return { zones: cachedSettings.zones, freeDeliveryThreshold: cachedSettings.freeDeliveryThreshold };
+  }
+
+  try {
+    const response = await fetch('/api/admin/delivery-settings', {
+      cache: 'no-store',
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      const enabledZones = data.zones.filter((z: DeliveryZone) => z.enabled !== false);
+      
+      cachedSettings = {
+        zones: enabledZones,
+        freeDeliveryThreshold: data.freeDeliveryThreshold || 500,
+        timestamp: Date.now(),
+      };
+      
+      return { zones: enabledZones, freeDeliveryThreshold: data.freeDeliveryThreshold };
+    }
+  } catch (error) {
+    console.error('Failed to fetch delivery settings, using defaults:', error);
+  }
+
+  // Return defaults if fetch fails
+  return { zones: DEFAULT_DELIVERY_ZONES, freeDeliveryThreshold: 500 };
+}
 
 /**
  * Calculate distance between two coordinates using Haversine formula
@@ -92,7 +136,9 @@ function toRadians(degrees: number): number {
 /**
  * Determine delivery zone based on location
  */
-export function getDeliveryZone(location: Location): DeliveryZone {
+export async function getDeliveryZone(location: Location): Promise<DeliveryZone> {
+  const { zones } = await fetchDeliverySettings();
+  
   const distance = calculateDistance(
     STORE_LOCATION.latitude,
     STORE_LOCATION.longitude,
@@ -101,7 +147,7 @@ export function getDeliveryZone(location: Location): DeliveryZone {
   );
 
   // Find matching zone by region or distance
-  for (const zone of DELIVERY_ZONES) {
+  for (const zone of zones) {
     if (location.city && zone.regions.some(r => location.city?.includes(r))) {
       return zone;
     }
@@ -114,22 +160,24 @@ export function getDeliveryZone(location: Location): DeliveryZone {
   }
 
   // Default to last zone (Other Regions)
-  return DELIVERY_ZONES[DELIVERY_ZONES.length - 1];
+  return zones[zones.length - 1];
 }
 
 /**
  * Calculate delivery cost
  */
-export function calculateDeliveryCost(
+export async function calculateDeliveryCost(
   customerLocation: Location,
   cartTotal: number
-): {
+): Promise<{
   zone: DeliveryZone;
   distance: number;
   deliveryCost: number;
   estimatedTime: string;
   freeDelivery: boolean;
-} {
+}> {
+  const { zones, freeDeliveryThreshold } = await fetchDeliverySettings();
+  
   const distance = calculateDistance(
     STORE_LOCATION.latitude,
     STORE_LOCATION.longitude,
@@ -137,13 +185,13 @@ export function calculateDeliveryCost(
     customerLocation.longitude
   );
 
-  const zone = getDeliveryZone(customerLocation);
+  const zone = await getDeliveryZone(customerLocation);
   
   // Calculate cost: base price + (distance * price per km)
   let deliveryCost = zone.basePrice + distance * zone.pricePerKm;
 
-  // Free delivery for orders above GHS 500
-  const freeDelivery = cartTotal >= 500;
+  // Free delivery for orders above threshold
+  const freeDelivery = cartTotal >= freeDeliveryThreshold;
   if (freeDelivery) {
     deliveryCost = 0;
   }

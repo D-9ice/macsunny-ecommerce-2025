@@ -10,7 +10,7 @@ export default function Footer() {
         </p>
 
         <p>
-          Designed and created for <span className="font-semibold">MacSunny Electronics</span> by
+          Designed and Developed for <span className="font-semibold">MacSunny Electronics</span> by
           <span className="font-semibold"> Frontier DevConsults</span>. Website:{' '}
           <a href="https://www.frontier-devconsults.com" target="_blank" rel="noopener noreferrer" className="underline">www.frontier-devconsults.com</a> • Email:{' '}
           <a href="mailto:info@frontier-devconsults.com" className="underline">info@frontier-devconsults.com</a> • Phone:

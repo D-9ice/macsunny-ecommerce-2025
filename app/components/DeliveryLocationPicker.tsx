@@ -40,8 +40,8 @@ export default function DeliveryLocationPicker({
     }
   };
 
-  const handleManualAddressSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleManualAddressSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
     if (!manualAddress.trim()) {
       setError('Please enter an address');
       return;
@@ -60,8 +60,8 @@ export default function DeliveryLocationPicker({
     }
   };
 
-  const calculateAndSetDelivery = (loc: Location) => {
-    const info = calculateDeliveryCost(loc, cartTotal);
+  const calculateAndSetDelivery = async (loc: Location) => {
+    const info = await calculateDeliveryCost(loc, cartTotal);
     setDeliveryInfo(info);
     onLocationSelected(loc, info);
   };
@@ -105,7 +105,7 @@ export default function DeliveryLocationPicker({
               </button>
             </div>
           ) : (
-            <form onSubmit={handleManualAddressSubmit} className="space-y-3">
+            <div className="space-y-3">
               <p className="text-gray-400 text-sm">
                 Enter your delivery address in Ghana
               </p>
@@ -113,12 +113,19 @@ export default function DeliveryLocationPicker({
                 type="text"
                 value={manualAddress}
                 onChange={(e) => setManualAddress(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleManualAddressSubmit(e as any);
+                  }
+                }}
                 placeholder="e.g., Accra, Tema, Kumasi..."
                 className="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-green-500 focus:outline-none"
               />
               <div className="flex gap-2">
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleManualAddressSubmit}
                   disabled={loading}
                   className="flex-1 bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
                 >
@@ -132,7 +139,7 @@ export default function DeliveryLocationPicker({
                   Back
                 </button>
               </div>
-            </form>
+            </div>
           )}
 
           {error && (
