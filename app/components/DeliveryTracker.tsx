@@ -136,15 +136,15 @@ export default function DeliveryTracker({ order, onUpdate }: DeliveryTrackerProp
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="bg-black/40 rounded p-2">
           <p className="text-xs text-gray-400 mb-1">Distance</p>
-          <p className="text-sm font-semibold text-white">{deliveryInfo.distance} km</p>
+          <p className="text-sm font-semibold text-white">{deliveryInfo.distance || 0} km</p>
         </div>
         <div className="bg-black/40 rounded p-2">
           <p className="text-xs text-gray-400 mb-1">Zone</p>
-          <p className="text-sm font-semibold text-white">{deliveryInfo.zone.name}</p>
+          <p className="text-sm font-semibold text-white">{deliveryInfo.zone?.name || 'Unknown Zone'}</p>
         </div>
         <div className="bg-black/40 rounded p-2">
           <p className="text-xs text-gray-400 mb-1">Est. Time</p>
-          <p className="text-sm font-semibold text-white">{deliveryInfo.estimatedTime}</p>
+          <p className="text-sm font-semibold text-white">{deliveryInfo.estimatedTime || 'N/A'}</p>
         </div>
         <div className="bg-black/40 rounded p-2">
           <p className="text-xs text-gray-400 mb-1">Delivery Cost</p>
@@ -152,7 +152,7 @@ export default function DeliveryTracker({ order, onUpdate }: DeliveryTrackerProp
             <p className="text-sm font-bold text-green-400">FREE</p>
           ) : (
             <p className="text-sm font-semibold text-yellow-400">
-              GHS {deliveryInfo.deliveryCost.toFixed(2)}
+              GHS {(deliveryInfo.deliveryCost || 0).toFixed(2)}
             </p>
           )}
         </div>
