@@ -66,7 +66,7 @@ export default function AdBanner() {
           <div>
             {/* Logo at Top Left */}
             <div className="flex items-start mb-2">
-              <Image 
+              <img 
                 src="/frontier-logo.jpg" 
                 alt="Frontier DevConsults Logo" 
                 width={60} 
@@ -81,7 +81,7 @@ export default function AdBanner() {
             {/* Invitation Message - HIGHLY VISIBLE */}
             <div className="mb-2">
               <p className="text-sm font-bold leading-snug" style={{ color: '#1e40af' }}>
-                Congratulations! You&apos;ve unlocked exclusive access to world-class development services. Get in touch with us for your professional, world-class apps or website, or visit our website/app store to request a build.
+                Congratulations! You&apos;ve unlocked exclusive access to world-class development services. Get in touch with us for your professional, world-class applications, website, and specialized AI tools or visit our website/app store to request a build.
               </p>
             </div>
 
@@ -90,12 +90,13 @@ export default function AdBanner() {
               <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition">
                 <span className="text-base">🌐</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-blue-700 font-semibold mb-0.5">Website</p>
+                  <p className="text-xs font-bold mb-0.5" style={{ color: '#000000' }}>Website</p>
                   <a 
                     href="https://www.frontier-devconsults.com" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-xs font-bold text-blue-800 hover:text-blue-900 hover:underline block truncate"
+                    className="text-xs font-bold hover:underline block truncate"
+                    style={{ color: '#1e40af' }}
                   >
                     www.frontier-devconsults.com
                   </a>
@@ -106,10 +107,11 @@ export default function AdBanner() {
               <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition">
                 <span className="text-base">✉️</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-blue-700 font-semibold mb-0.5">Email</p>
+                  <p className="text-xs font-bold mb-0.5" style={{ color: '#000000' }}>Email</p>
                   <a 
                     href="mailto:info@frontier-devconsults.com" 
-                    className="text-xs font-bold text-blue-800 hover:text-blue-900 hover:underline block truncate"
+                    className="text-xs font-bold hover:underline block truncate"
+                    style={{ color: '#1e40af' }}
                   >
                     info@frontier-devconsults.com
                   </a>
@@ -120,10 +122,11 @@ export default function AdBanner() {
               <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition">
                 <span className="text-base">📱</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-blue-700 font-semibold mb-0.5">WhatsApp/Call</p>
+                  <p className="text-xs font-bold mb-0.5" style={{ color: '#000000' }}>WhatsApp/Call</p>
                   <a 
                     href="tel:+233596106767" 
-                    className="text-xs font-bold text-blue-800 hover:text-blue-900 hover:underline block"
+                    className="text-xs font-bold hover:underline block"
+                    style={{ color: '#1e40af' }}
                   >
                     +233 596 106 767
                   </a>
@@ -134,10 +137,11 @@ export default function AdBanner() {
               <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition">
                 <span className="text-base">📞</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-blue-700 font-semibold mb-0.5">Alternative</p>
+                  <p className="text-xs font-bold mb-0.5" style={{ color: '#000000' }}>Alternative</p>
                   <a 
                     href="tel:+233249078976" 
-                    className="text-xs font-bold text-blue-800 hover:text-blue-900 hover:underline block"
+                    className="text-xs font-bold hover:underline block"
+                    style={{ color: '#1e40af' }}
                   >
                     +233 249 078 976
                   </a>

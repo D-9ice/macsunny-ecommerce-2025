@@ -210,6 +210,7 @@ export async function POST(req: NextRequest) {
               type: "image_url",
               image_url: {
                 url: image, // data: URL from the frontend
+                detail: "high", // request high-fidelity vision analysis
               },
             },
           ],
