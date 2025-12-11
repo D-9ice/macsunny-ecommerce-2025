@@ -15,7 +15,6 @@ import type { Location } from '@/app/lib/geolocation';
 export default function CheckoutPage() {
   const router = useRouter();
   const [items, setItems] = useState<CartItem[]>([]);
-  // Backup form state
   const [form, setForm] = useState({
     name: '',
     phone: '',
@@ -26,10 +25,6 @@ export default function CheckoutPage() {
   const [wantsDelivery, setWantsDelivery] = useState(false);
   const [deliveryLocation, setDeliveryLocation] = useState<Location | null>(null);
   const [deliveryInfo, setDeliveryInfo] = useState<any>(null);
-  
-  // Keep customName and customPhone for later review
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
 
   useEffect(() => {
     setItems(getCart());

@@ -17,6 +17,18 @@ async function getMongoClient() {
 }
 
 export async function GET() {
+  // Default empty stats
+  const emptyStats = {
+    totalVisits: 0,
+    uniqueVisitors: 0,
+    todayVisits: 0,
+    thisWeekVisits: 0,
+    thisMonthVisits: 0,
+    pageViews: {},
+    topPages: [],
+    lastUpdated: new Date(),
+  };
+
   try {
     const client = await getMongoClient();
     const db = client.db('macsunny');
@@ -75,18 +87,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Failed to fetch visit stats:', error);
-    return NextResponse.json(
-      {
-        totalVisits: 0,
-        uniqueVisitors: 0,
-        todayVisits: 0,
-        thisWeekVisits: 0,
-        thisMonthVisits: 0,
-        pageViews: {},
-        topPages: [],
-        lastUpdated: new Date(),
-      },
-      { status: 500 }
-    );
+    // Return 200 with empty stats instead of 500 to prevent UI errors
+    return NextResponse.json(emptyStats);
   }
 }

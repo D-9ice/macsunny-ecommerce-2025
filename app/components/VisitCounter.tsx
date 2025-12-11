@@ -6,6 +6,7 @@ import { getVisitStats, formatVisitCount, type VisitStats } from '@/app/lib/anal
 export default function VisitCounter() {
   const [stats, setStats] = useState<VisitStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     loadStats();
@@ -16,16 +17,18 @@ export default function VisitCounter() {
 
   const loadStats = async () => {
     try {
+      setError(false);
       const data = await getVisitStats();
       setStats(data);
-    } catch (error) {
-      console.error('Failed to load visit stats:', error);
+    } catch (err) {
+      console.error('Failed to load visit stats:', err);
+      setError(true);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading || !stats) {
+  if (loading) {
     return (
       <div className="bg-zinc-900 rounded-xl border border-gray-800 p-6 animate-pulse">
         <div className="h-6 bg-gray-800 rounded w-32 mb-4"></div>
@@ -33,6 +36,28 @@ export default function VisitCounter() {
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-20 bg-gray-800 rounded"></div>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !stats) {
+    return (
+      <div className="bg-zinc-900 rounded-xl border border-gray-800 p-6">
+        <h3 className="text-xl font-semibold mb-4 text-white flex items-center gap-2">
+          <span className="text-2xl">📊</span>
+          Visitor Analytics
+        </h3>
+        <div className="bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4 text-center">
+          <p className="text-yellow-300 text-sm">
+            Analytics temporarily unavailable
+          </p>
+          <button
+            onClick={loadStats}
+            className="mt-2 text-xs text-blue-400 hover:underline"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );

@@ -125,10 +125,11 @@ export default function DeliverySettingsPage() {
         ),
       });
     } else {
-      // Add new zone
+      // Add new zone - generate ID on client side only
+      const newId = `zone-${Math.random().toString(36).substring(2, 11)}`;
       setSettings({
         ...settings,
-        zones: [...settings.zones, { ...editingZone, _id: Date.now().toString() }],
+        zones: [...settings.zones, { ...editingZone, _id: newId }],
       });
     }
 
