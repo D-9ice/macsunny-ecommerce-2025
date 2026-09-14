@@ -1,37 +1,7 @@
 'use client';
-
 import Link from 'next/link';
+import { MapPin, Phone } from 'lucide-react';
 
 export default function Navbar() {
-  return (
-    <header className="relative bg-green-800 text-white">
-      <div className="flex w-full items-center gap-[2px] sm:gap-[2px] overflow-hidden pl-[3px] pr-[2px] pb-12 pt-4">
-        <img
-          src="/macsunny-logo.png"
-          alt="MacSunny Electronics logo"
-          className="h-12 w-12 sm:h-16 sm:w-16 animate-spin-horizontal md:h-20 md:w-20 lg:h-24 lg:w-24 flex-shrink-0"
-        />
-
-        <div className="flex-1 min-w-0 pr-[2px] text-center overflow-hidden">
-          <p className="whitespace-nowrap font-serif font-extrabold leading-none tracking-normal sm:tracking-wide text-[clamp(9px,6vw,82px)] px-0 sm:px-1">
-            MACSUNNY ELECTRONICS
-          </p>
-          <p className="mt-[1px] whitespace-nowrap text-[clamp(4px,2vw,18px)] uppercase leading-none tracking-wide text-white/90">
-            Home of high quality electronics components &amp; accessories
-          </p>
-        </div>
-      </div>
-
-      <div className="absolute inset-x-0 bottom-[1px]">
-        <div className="mx-auto max-w-6xl px-[1px] text-center text-white/90">
-          <p className="text-[clamp(5px,1.8vw,16px)] leading-tight">
-            <span className="font-semibold">WhatsApp/Phone:</span> (+233) 0243380902·0249135208·0551507985
-          </p>
-          <p className="text-[clamp(5px,1.8vw,16px)] leading-tight">
-            <span className="font-semibold">Email:</span> Macsunny2025@gmail.com · <Link href="https://www.macsunny.com" className="underline">www.macsunny.com</Link>
-          </p>
-        </div>
-      </div>
-    </header>
-  );
+  return <header className="site-header"><div className="site-header__utility"><span><MapPin size={13}/> Accra, Ghana · Delivery nationwide</span><a href="tel:+233243380902"><Phone size={13}/> 024 338 0902</a></div><div className="site-header__main"><Link href="/" className="site-brand"><img src="/macsunny-logo.png" alt="MacSunny Electronics"/><span><b>MACSUNNY</b><small>ELECTRONICS</small></span></Link><p>Components that power your ideas.</p><nav><a href="https://wa.me/233551507985">WhatsApp support</a></nav></div></header>;
 }

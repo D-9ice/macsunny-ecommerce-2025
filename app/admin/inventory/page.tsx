@@ -15,7 +15,7 @@ export default function InventoryPage() {
     name: '',
     category: '',
     price: 0,
-    image: '/logo.svg',
+    imageUrl: null,
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('/logo.svg');
@@ -67,13 +67,8 @@ export default function InventoryPage() {
       }
 
       setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setImagePreview(base64String);
-  setFormData((prev: Product) => ({ ...prev, image: base64String }));
-      };
-      reader.readAsDataURL(file);
+      if (imagePreview.startsWith('blob:')) URL.revokeObjectURL(imagePreview);
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
@@ -96,6 +91,7 @@ export default function InventoryPage() {
       });
 
       if (response.ok) {
+        if (imageFile) await uploadImage(formData.sku, imageFile, formData.name);
         await loadProducts();
         setShowAddForm(false);
         resetForm();
@@ -113,7 +109,7 @@ export default function InventoryPage() {
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
     setFormData(product);
-    setImagePreview(product.image);
+    setImagePreview(product.imageUrl || product.image || '/macsunny-logo.png');
     setShowAddForm(true);
   };
 
@@ -128,6 +124,7 @@ export default function InventoryPage() {
       });
 
       if (response.ok) {
+        if (imageFile) await uploadImage(formData.sku, imageFile, formData.name);
         await loadProducts();
         setEditingProduct(null);
         setShowAddForm(false);
@@ -168,7 +165,15 @@ export default function InventoryPage() {
     setEditingProduct(null);
     setImageFile(null);
     setImagePreview('/logo.svg');
-    setFormData({ sku: '', name: '', category: '', price: 0, image: '/logo.svg' });
+    setFormData({ sku: '', name: '', category: '', price: 0, imageUrl: null });
+  };
+
+  const uploadImage = async (sku: string, file: File, alt: string) => {
+    const data = new FormData();
+    data.append('sku', sku); data.append('file', file); data.append('alt', alt);
+    const response = await fetch('/api/admin/products/image', { method: 'POST', body: data });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || 'Image upload failed');
   };
 
   const [categories, setCategories] = useState<string[]>([]);
@@ -359,7 +364,7 @@ export default function InventoryPage() {
               setEditingProduct(null);
               setImageFile(null);
               setImagePreview('/logo.svg');
-              setFormData({ sku: '', name: '', category: '', price: 0, image: '/logo.svg' });
+              setFormData({ sku: '', name: '', category: '', price: 0, imageUrl: null });
             }}
             className="px-4 py-2 bg-green-700 hover:bg-green-800 rounded-lg transition-colors"
           >
@@ -386,7 +391,7 @@ export default function InventoryPage() {
           onProductSelect={(product) => {
             setEditingProduct(product);
             setFormData(product);
-            setImagePreview(product.image || '/logo.svg');
+            setImagePreview(product.imageUrl || product.image || '/macsunny-logo.png');
             setShowAddForm(true);
           }}
           onBulkEdit={(selectedProducts) => {
@@ -607,9 +612,8 @@ export default function InventoryPage() {
                     type="button"
                     onClick={() => {
                       if (editingProduct) {
-                        setImagePreview(editingProduct.image);
+                        setImagePreview(editingProduct.imageUrl || editingProduct.image || '/macsunny-logo.png');
                         setImageFile(null);
-                        setFormData((prev: Product) => ({ ...prev, image: editingProduct.image }));
                       }
                     }}
                     className="text-xs text-blue-400 hover:underline mt-1"
@@ -659,7 +663,7 @@ export default function InventoryPage() {
                   <tr key={product.sku} className="hover:bg-gray-800/50">
                     <td className="px-6 py-4">
                       <div className="w-12 h-12 bg-gray-700 rounded overflow-hidden">
-                        <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                        <img src={product.imageUrl || product.image || '/macsunny-logo.png'} alt={product.imageAlt || product.name} className="w-full h-full object-cover" />
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm font-mono">{product.sku}</td>

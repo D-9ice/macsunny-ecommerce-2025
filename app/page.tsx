@@ -1,276 +1,53 @@
 'use client';
 
-import { Suspense, useEffect, useState, FormEvent } from 'react';
+import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Product, allProducts, readAdmin } from './lib/products';
+import { ArrowRight, Box, ChevronLeft, ChevronRight, Cpu, Headphones, Search, ShieldCheck, ShoppingCart, Truck, Zap } from 'lucide-react';
+import { Product } from './lib/products';
 import { addToCart, getCart } from './lib/cart';
 import { showToast } from './components/Toast';
 import WhatsAppFab from './components/WhatsAppFab';
-import ComponentsMenu from './components/ComponentsMenu';
-import AIChatFab from './components/AIChatFab';
-import LocationFab from './components/LocationFab';
-import AdBanner from './components/AdBanner';
 
-const MAX_RESULTS = 100;
+type Pagination = { page: number; pages: number; total: number; limit: number };
+const fallbackCategories = ['Integrated Circuits', 'Semiconductors', 'Resistors', 'Capacitors', 'Modules', 'Connectors'];
 
-function filterProducts(query: string, productsList: Product[]): Product[] {
-  const trimmed = query.trim().toLowerCase();
-  if (!trimmed) {
-    return productsList.slice(0, MAX_RESULTS);
-  }
+function Storefront() {
+  const router = useRouter(), params = useSearchParams();
+  const q = params.get('q') || '', category = params.get('category') || '', page = Number(params.get('page') || 1);
+  const [draft, setDraft] = useState(q), [products, setProducts] = useState<Product[]>([]), [pagination, setPagination] = useState<Pagination>({ page: 1, pages: 1, total: 0, limit: 24 });
+  const [loading, setLoading] = useState(true), [error, setError] = useState(''), [retry, setRetry] = useState(0), [cartCount, setCartCount] = useState(0), [categories, setCategories] = useState<string[]>(fallbackCategories);
+  const queryString = useMemo(() => { const p = new URLSearchParams({ page: String(page), limit: '24' }); if (q) p.set('search', q); if (category) p.set('category', category); return p.toString(); }, [q, category, page]);
+  useEffect(() => { setDraft(q); }, [q]);
+  useEffect(() => {
+    const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 12000);
+    setLoading(true); setError('');
+    fetch(`/api/products?${queryString}`, { signal: controller.signal }).then(async r => { const d = await r.json(); if (!r.ok || !d.success) throw new Error(d.message || 'Catalogue request failed'); setProducts(d.data || d.products || []); setPagination(d.pagination); }).catch(e => setError(e.name === 'AbortError' ? 'The catalogue took too long to respond.' : e.message)).finally(() => { clearTimeout(timeout); setLoading(false); });
+    return () => { clearTimeout(timeout); controller.abort(); };
+  }, [queryString, retry]);
+  useEffect(() => { fetch('/api/categories').then(r => r.json()).then(d => d.success && d.categories?.length && setCategories(d.categories)).catch(() => {}); }, []);
+  useEffect(() => { const update = () => setCartCount(getCart().reduce((n, item) => n + item.qty, 0)); update(); window.addEventListener('storage', update); return () => window.removeEventListener('storage', update); }, []);
+  const navigate = (updates: Record<string, string>) => { const next = new URLSearchParams(params.toString()); Object.entries(updates).forEach(([key, value]) => value ? next.set(key, value) : next.delete(key)); router.push(`/?${next.toString()}`); };
+  const submit = (e: FormEvent) => { e.preventDefault(); navigate({ q: draft.trim(), page: '1' }); };
+  const add = (p: Product) => { addToCart({ sku: p.sku, name: p.name, price: p.price, image: p.imageUrl || p.image || '/macsunny-logo.png', qty: 1 }); setCartCount(getCart().reduce((n, item) => n + item.qty, 0)); showToast(`${p.name} added to cart`, 'success'); };
 
-  return productsList
-    .filter((product) => {
-      const name = product.name.toLowerCase();
-      const category = product.category.toLowerCase();
-      const sku = product.sku.toLowerCase();
-      return (
-        name.includes(trimmed) ||
-        category.includes(trimmed) ||
-        sku.includes(trimmed)
-      );
-    })
-    .slice(0, MAX_RESULTS);
+  return <main className="pcb-store">
+    <section className="pcb-hero">
+      <div className="pcb-hero__copy"><span className="eyebrow"><Zap size={14}/> Ghana&apos;s component supply desk</span><h1>Build bold ideas.<br/><em>Source the right parts.</em></h1><p>Quality electronic components, modules and accessories for repairs, prototypes and production.</p><div className="hero-actions"><a href="#catalogue">Browse components <ArrowRight size={17}/></a><a className="secondary" href="https://wa.me/233551507985">Talk to a parts expert</a></div></div>
+      <div className="pcb-hero__chip" aria-hidden="true"><span className="chip-pin p1"/><span className="chip-pin p2"/><span className="chip-pin p3"/><span className="chip-pin p4"/><div><Cpu size={76}/><b>MACSUNNY</b><small>COMPONENTS / GH</small></div></div>
+    </section>
+    <section className="search-deck" aria-label="Product search"><form onSubmit={submit}><label className="sr-only" htmlFor="component-search">Search components</label><Search/><input id="component-search" value={draft} onChange={e => setDraft(e.target.value)} placeholder="Search by component, SKU or part number…"/><select aria-label="Product category" value={category} onChange={e => navigate({ category: e.target.value, page: '1' })}><option value="">All categories</option>{categories.map(c => <option key={c}>{c}</option>)}</select><button>Search</button></form><Link href="/cart"><ShoppingCart size={20}/> Cart <span>{cartCount}</span></Link></section>
+    <section className="category-strip"><div><span>SHOP BY BOARD</span><h2>Find your component family</h2></div><div className="category-pills">{fallbackCategories.slice(0, 5).map((c, i) => <button key={c} onClick={() => navigate({ category: c, page: '1' })}><span>{[<Cpu key="a"/>,<Zap key="b"/>,<Box key="c"/>,<Box key="d"/>,<Cpu key="e"/>][i]}</span>{c}</button>)}</div></section>
+    <section id="catalogue" className="catalogue"><div className="section-heading"><div><span>{q || category ? 'FILTERED SIGNAL' : 'FRESH ON THE BOARD'}</span><h2>{q ? `Results for “${q}”` : category || 'Latest components'}</h2></div><p>{pagination.total} components</p></div>
+      {loading ? <div className="product-grid" aria-label="Loading products">{Array.from({ length: 10 }).map((_, i) => <div className="product-card skeleton" key={i}><i/><b/><span/><button/></div>)}</div>
+      : error ? <div className="catalogue-error"><Zap/><h3>Products could not be loaded right now.</h3><p>{error} Search and contact options remain available while we restore the catalogue.</p><button onClick={() => setRetry(v => v + 1)}>Retry catalogue</button></div>
+      : !products.length ? <div className="catalogue-error"><Search/><h3>No matching components</h3><p>Try another part number, name, or category.</p><button onClick={() => router.push('/')}>Clear filters</button></div>
+      : <div className="product-grid">{products.map(p => <article className="product-card" key={p.sku}><div className="product-card__image"><img loading="lazy" src={p.imageUrl || p.image || '/macsunny-logo.png'} alt={p.imageAlt || p.name} onError={e => { e.currentTarget.src = '/macsunny-logo.png'; }}/><span>{(p.quantity ?? 1) > 0 ? 'In stock' : 'Ask us'}</span></div><div className="product-card__body"><small>{p.category}</small><h3>{p.name}</h3><code>{p.sku}</code><div><strong>GH₵ {Number(p.price).toFixed(2)}</strong><button onClick={() => add(p)} aria-label={`Add ${p.name} to cart`}><ShoppingCart size={18}/></button></div></div></article>)}</div>}
+      {pagination.pages > 1 && <nav className="pagination" aria-label="Catalogue pages"><button disabled={page <= 1} onClick={() => navigate({ page: String(page - 1) })}><ChevronLeft/> Previous</button><span>Page {page} of {pagination.pages}</span><button disabled={page >= pagination.pages} onClick={() => navigate({ page: String(page + 1) })}>Next <ChevronRight/></button></nav>}
+    </section>
+    <section className="trust-grid"><div><ShieldCheck/><span><b>Quality checked</b><small>Components sourced with care</small></span></div><div><Truck/><span><b>Delivery across Ghana</b><small>Flexible delivery arrangements</small></span></div><div><Headphones/><span><b>Human technical support</b><small>Get help finding the right part</small></span></div></section>
+    <WhatsAppFab />
+  </main>;
 }
 
-function HomeContent() {
-  const router = useRouter();
-  const params = useSearchParams();
-  const q = params.get('q') ?? '';
-
-  const [allProductsList, setAllProductsList] = useState<Product[]>([]);
-  const [items, setItems] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [cartCount, setCartCount] = useState(0);
-
-  useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        // Fetch from database API instead of localStorage
-        const response = await fetch('/api/products');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.products && data.products.length > 0) {
-            setAllProductsList(data.products);
-          } else {
-            // Fallback to default products
-            setAllProductsList(allProducts());
-          }
-        } else {
-          // Fallback to localStorage/default
-          const adminProducts = readAdmin();
-          if (adminProducts && adminProducts.length > 0) {
-            setAllProductsList(adminProducts);
-          } else {
-            setAllProductsList(allProducts());
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load products:', error);
-        // Fallback to localStorage/default
-        const adminProducts = readAdmin();
-        if (adminProducts && adminProducts.length > 0) {
-          setAllProductsList(adminProducts);
-        } else {
-          setAllProductsList(allProducts());
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProducts();
-  }, []);
-
-  useEffect(() => {
-    setItems(filterProducts(q, allProductsList));
-  }, [q, allProductsList]);
-
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'A') {
-        event.preventDefault();
-        router.push('/admin');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [router]);
-
-  // Update cart count on mount and after adding items
-  useEffect(() => {
-    const updateCartCount = () => {
-      const cart = getCart();
-      const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
-      setCartCount(totalItems);
-    };
-
-    updateCartCount();
-    // Listen for storage changes from other tabs
-    window.addEventListener('storage', updateCartCount);
-    return () => window.removeEventListener('storage', updateCartCount);
-  }, []);
-
-  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const query = (formData.get('q') as string) ?? '';
-    router.push(query ? `/?q=${encodeURIComponent(query)}` : '/');
-  };
-
-  const handleAddToCart = (product: Product) => {
-    try {
-      addToCart({
-        sku: product.sku,
-        name: product.name,
-        price: product.price,
-        image: product.image,
-        qty: 1,
-      });
-      // Update cart count immediately
-      const cart = getCart();
-      const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
-      setCartCount(totalItems);
-      // Show success toast
-      showToast(`${product.name} added to cart!`, 'success');
-    } catch (error) {
-      console.error('Failed to add to cart:', error);
-      showToast('Failed to add item to cart. Please try again.', 'error');
-    }
-  };
-
-  return (
-    <main className="mx-auto max-w-6xl px-4 py-6 pb-80">
-      <form className="mb-6 flex flex-col gap-3 md:flex-row md:items-center" onSubmit={handleSearch}>
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder="Search components (e.g., 10k resistor, 0603, LM7805)"
-          aria-label="Search products"
-          className="w-full rounded-md border border-gray-700 bg-black px-3 py-2.5 text-white placeholder-gray-400 focus:border-green-500 focus:outline-none md:h-10"
-        />
-        <div className="flex flex-shrink-0 items-stretch gap-3">
-          <button
-            type="submit"
-            className="h-10 w-24 rounded-md bg-green-700 font-medium text-white transition-colors hover:bg-green-800"
-          >
-            Search
-          </button>
-          <Link
-            href="/cart"
-            id="cartBtn"
-            className="relative flex h-10 w-24 items-center justify-center rounded-md bg-yellow-400 font-medium text-black transition-colors hover:bg-yellow-500"
-          >
-            Cart
-            {cartCount > 0 && (
-              <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white">
-                {cartCount > 99 ? '99+' : cartCount}
-              </span>
-            )}
-          </Link>
-          <ComponentsMenu />
-        </div>
-      </form>
-
-      {q && (
-        <div className="mb-4 flex items-center gap-2 text-sm">
-          <span className="text-gray-400">Showing results for:</span>
-          <span className="font-semibold text-white">{q}</span>
-          <button
-            type="button"
-            onClick={() => router.push('/')}
-            className="text-green-400 transition-colors hover:text-green-300"
-          >
-            Clear
-          </button>
-        </div>
-      )}
-
-      <h2 className="mb-4 text-xl font-semibold">
-        {q ? `Search Results (${items.length})` : 'Latest Components'}
-      </h2>
-
-      {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {Array.from({ length: 10 }).map((_, index) => (
-            <div
-              key={index}
-              className="flex flex-col gap-3 rounded-xl border border-gray-800 bg-zinc-900 p-4 animate-pulse"
-            >
-              <div className="h-32 w-full rounded-lg bg-gray-800" />
-              <div className="h-6 w-3/4 rounded bg-gray-800" />
-              <div className="h-4 w-1/2 rounded bg-gray-700" />
-              <div className="h-5 w-1/3 rounded bg-gray-800" />
-              <div className="mt-auto h-10 w-full rounded-md bg-gray-800" />
-            </div>
-          ))}
-        </div>
-      ) : items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center text-gray-400">
-          <p className="text-lg">No products found for "{q}"</p>
-          <button
-            type="button"
-            onClick={() => router.push('/')}
-            className="mt-4 rounded-md bg-green-700 px-6 py-2 font-medium text-white transition-colors hover:bg-green-800"
-          >
-            View All Products
-          </button>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {items.map((product) => (
-            <article
-              key={product.sku}
-              className="flex flex-col gap-3 rounded-xl border border-gray-800 bg-zinc-900 p-4 text-white shadow-sm transition-all duration-300 hover:shadow-xl hover:border-green-500"
-            >
-              <div className="relative h-32 w-full overflow-hidden rounded-lg bg-black/60 cursor-zoom-in group">
-                <img
-                  src={product.image || '/macsunny-logo.png'}
-                  alt={product.name}
-                  className="h-full w-full object-contain transition-all duration-500 group-hover:scale-125"
-                  onError={(event) => {
-                    const target = event.currentTarget;
-                    target.src = '/macsunny-logo.png';
-                  }}
-                />
-              </div>
-              <h3 className="text-lg font-semibold">{product.name}</h3>
-              <p className="text-sm text-gray-400">
-                {product.sku} • {product.category}
-              </p>
-              <p className="text-base font-medium text-yellow-300">
-                GHS {product.price.toFixed(2)}
-              </p>
-              <button
-                type="button"
-                onClick={() => handleAddToCart(product)}
-                className="mt-auto w-full rounded-md bg-yellow-400 px-4 py-2 font-medium text-black transition-colors hover:bg-yellow-500"
-              >
-                Add to Cart
-              </button>
-            </article>
-          ))}
-        </div>
-      )}
-
-      <AdBanner />
-      <WhatsAppFab />
-      <AIChatFab />
-      <LocationFab />
-    </main>
-  );
-}
-
-export default function Home() {
-  return (
-    <Suspense
-      fallback={
-        <div className="mx-auto max-w-6xl px-4 py-6 text-gray-300">Loading...</div>
-      }
-    >
-      <HomeContent />
-    </Suspense>
-  );
-}
+export default function Home() { return <Suspense fallback={<main className="pcb-store"><div className="catalogue-error">Loading storefront…</div></main>}><Storefront/></Suspense>; }

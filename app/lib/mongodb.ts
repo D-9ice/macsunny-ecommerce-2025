@@ -66,7 +66,21 @@ const ProductSchema = new mongoose.Schema(
     name: { type: String, required: true },
     category: { type: String, required: true },
     price: { type: Number, required: true },
-    image: { type: String, default: '/logo.svg' },
+    imageUrl: { type: String, default: null },
+    imageAlt: { type: String, default: null },
+    imageStorageKey: { type: String, default: null },
+    imageFormat: { type: String, enum: ['webp', null], default: null },
+    imageMimeType: { type: String, enum: ['image/webp', null], default: null },
+    imageWidth: { type: Number, default: null },
+    imageHeight: { type: Number, default: null },
+    imageBytes: { type: Number, default: null },
+    imageUpdatedAt: { type: Date, default: null },
+    imageMigrationStatus: { type: String, enum: ['pending', 'migrated', 'failed'], default: null },
+    imageMigrationError: { type: String, default: null },
+    imageMigratedAt: { type: Date, default: null },
+    image: { type: String, select: false },
+    description: { type: String, default: '' },
+    quantity: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
@@ -116,3 +130,20 @@ export const OrderModel =
   mongoose.models.Order || mongoose.model('Order', OrderSchema);
 export const CategoryModel =
   mongoose.models.Category || mongoose.model('Category', CategorySchema);
+
+const ComplianceStateSchema = new mongoose.Schema({
+  singletonKey: { type: String, unique: true, default: 'site' },
+  mode: { type: String, enum: ['ACTIVE', 'WARNING', 'SERVICE_LOCKED'], default: 'ACTIVE' },
+  warningStartedAt: { type: Date, default: null },
+  warningEndsAt: { type: Date, default: null },
+  message: { type: String, default: '' },
+  updatedBy: { type: String, default: 'owner' },
+}, { timestamps: true });
+
+const ComplianceAuditSchema = new mongoose.Schema({
+  action: { type: String, required: true }, success: { type: Boolean, required: true },
+  ip: String, requestId: String, detail: String,
+}, { timestamps: true });
+
+export const ComplianceStateModel = mongoose.models.ComplianceState || mongoose.model('ComplianceState', ComplianceStateSchema);
+export const ComplianceAuditModel = mongoose.models.ComplianceAudit || mongoose.model('ComplianceAudit', ComplianceAuditSchema);

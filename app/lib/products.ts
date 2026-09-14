@@ -1,13 +1,18 @@
 export type Product = {
+  _id?: string;
   sku: string;
   name: string;
   category: string;
   price: number;
-  image: string;
+  imageUrl?: string | null;
+  image?: string | null;
+  imageAlt?: string | null;
+  description?: string;
+  quantity?: number;
 };
 
 export const products: Product[] = [
-  { sku: 'ESP32-WROOM', name: 'ESP32-WROOM Module', category: 'WiFi/BT', price: 45.0, image: '/logo.svg' },
+  { sku: 'ESP32-WROOM', name: 'ESP32-WROOM Module', category: 'WiFi/BT', price: 45.0, imageUrl: null, image: null },
 ];
 
 const ADMIN_KEY = 'ms_admin_products';
