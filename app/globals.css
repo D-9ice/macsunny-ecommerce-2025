@@ -122,7 +122,7 @@ body {
 }
 
 html { scroll-behavior: smooth; }
-.site-header { position:relative;z-index:20;border-bottom:1px solid #2c704d;background:#061d16;color:#eafff5 }
+.site-header { position:sticky;top:0;z-index:90;border-bottom:1px solid #2c704d;background:#061d16;color:#eafff5;box-shadow:0 8px 24px #0005 }
 .site-header__utility { display:flex;justify-content:space-between;max-width:72rem;margin:auto;padding:.42rem 1rem;border-bottom:1px solid #6bc29129;color:#a9c8b9;font-size:.72rem }
 .site-header__utility span,.site-header__utility a { display:flex;align-items:center;gap:.35rem }
 .site-header__main { display:flex;align-items:center;gap:2rem;max-width:72rem;margin:auto;padding:.8rem 1rem }
