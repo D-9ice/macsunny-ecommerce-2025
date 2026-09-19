@@ -4,8 +4,8 @@ import sharp from 'sharp';
 
 const dryRun = process.argv.includes('--dry-run');
 const batchSize = Math.min(50, Math.max(1, Number(process.env.MIGRATION_BATCH_SIZE || 10)));
-const uri = process.env.MONGODB_URI;
-if (!uri) throw new Error('MONGODB_URI is required');
+const uri = process.env.MONGODB_DIRECT_URI || process.env.MONGODB_URI;
+if (!uri) throw new Error('MONGODB_URI or MONGODB_DIRECT_URI is required');
 if (!dryRun && !process.env.BLOB_READ_WRITE_TOKEN) throw new Error('BLOB_READ_WRITE_TOKEN is required');
 
 async function main() {
