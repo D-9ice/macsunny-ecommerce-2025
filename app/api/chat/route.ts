@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { connectDB, ProductModel } from '@/app/lib/mongodb';
 
+const AI_MODEL = 'gpt-5.6-luna';
+const AI_PROVIDER = 'GPT-5.6 Luna';
+
 export async function POST(req: Request) {
   try {
     const { messages, includeProductContext } = await req.json();
@@ -34,7 +37,7 @@ export async function POST(req: Request) {
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
       
       const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: AI_MODEL,
         messages: [
           {
             role: 'system',
@@ -42,8 +45,8 @@ export async function POST(req: Request) {
           },
           ...messages,
         ],
-        max_tokens: 50, // Very short for greetings
-        temperature: 0.7,
+        max_completion_tokens: 50, // Very short for greetings
+        reasoning_effort: 'none',
       });
 
       const aiReply = response.choices[0].message.content || 'Hello! How can I help you?';
@@ -51,6 +54,8 @@ export async function POST(req: Request) {
       return NextResponse.json({
         success: true,
         message: aiReply,
+        provider: AI_PROVIDER,
+        model: AI_MODEL,
         context_type: 'simple_greeting',
         tokens_used: response.usage?.total_tokens || 0,
       });
@@ -181,17 +186,18 @@ CRITICAL INSTRUCTIONS:
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: AI_MODEL,
       messages: [{ role: 'system', content: systemPrompt }, ...messages] as any,
-      temperature: 0.3,
-      max_tokens: isSimpleMessage ? 50 : (isEquivalentQuery ? 200 : 100), // Very short for greetings, moderate for product queries
+      reasoning_effort: 'none',
+      max_completion_tokens: isSimpleMessage ? 50 : (isEquivalentQuery ? 200 : 100), // Very short for greetings, moderate for product queries
       stream: false
     });
 
     return NextResponse.json({
       success: true,
       message: response.choices[0]?.message?.content || 'No response',
-      provider: 'GPT-4',
+      provider: AI_PROVIDER,
+      model: AI_MODEL,
       context_type: contextType
     });
 
@@ -207,6 +213,7 @@ export async function GET() {
   return NextResponse.json({
     success: true,
     configured: !!process.env.OPENAI_API_KEY,
-    provider: 'GPT-4'
+    provider: AI_PROVIDER,
+    model: AI_MODEL
   });
 }
