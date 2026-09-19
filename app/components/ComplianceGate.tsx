@@ -27,7 +27,7 @@ export default function ComplianceGate() {
         router.push('/admin');
         return;
       }
-      if ((e.metaKey || e.ctrlKey) && e.altKey && e.shiftKey && e.key.toLowerCase() === 'u') { e.preventDefault(); router.push('/service-console'); }
+      if ((e.metaKey || e.ctrlKey) && e.altKey && e.shiftKey && e.code === 'KeyU') { e.preventDefault(); router.push('/service-console'); }
     };
     window.addEventListener('keydown', onKey, { capture: true });
     return () => window.removeEventListener('keydown', onKey, { capture: true });
