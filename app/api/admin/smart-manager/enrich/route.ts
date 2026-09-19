@@ -28,7 +28,7 @@ For images, provide direct image URLs only when the source visibly shows exactly
       text: { format: { type: 'json_schema', name: 'verified_component', strict: true, schema: componentSchema } },
     }), client.responses.create({
       model: SMART_MANAGER_MODEL, store: false,
-      tools: [{ type: 'web_search', search_content_types: ['image'], image_settings: { max_results: 6, caption: true } }] as never,
+      tools: [{ type: 'web_search', search_content_types: ['image'], image_settings: { max_results: 3, caption: true } }] as never,
       include: ['web_search_call.results'] as never,
       input: `Find clear, accurate product photographs for the exact electronic part ${identifier}. Return images showing exactly one complete component on a clean background, with all pins and the face marking visible. Exclude lots, kits, circuit boards, diagrams, logos, and similar-looking part numbers.`,
     })]);
@@ -40,12 +40,13 @@ For images, provide direct image URLs only when the source visibly shows exactly
       const results = Array.isArray(item.results) ? item.results as Array<Record<string, unknown>> : [];
       return results.filter((entry) => entry.type === 'image_result').map((entry) => ({
         url: safeHttpUrl(entry.image_url || entry.thumbnail_url),
+        fallbackUrl: safeHttpUrl(entry.thumbnail_url),
         sourceUrl: safeHttpUrl(entry.source_website_url),
         title: String(entry.caption || `${result.partNumber || identifier} component image`).slice(0, 180),
       }));
     });
-    const imageCandidates = [...result.images, ...searchedImages].map((item) => ({ ...item, url: safeHttpUrl(item.url), sourceUrl: safeHttpUrl(item.sourceUrl) })).filter((item) => item.url);
-    result.images = imageCandidates.filter((item, index) => imageCandidates.findIndex((candidate) => candidate.url === item.url) === index).slice(0, 6);
+    const imageCandidates = [...result.images, ...searchedImages].map((item) => ({ ...item, url: safeHttpUrl(item.url), fallbackUrl: safeHttpUrl('fallbackUrl' in item ? item.fallbackUrl : ''), sourceUrl: safeHttpUrl(item.sourceUrl) })).filter((item) => item.url);
+    result.images = imageCandidates.filter((item, index) => imageCandidates.findIndex((candidate) => candidate.url === item.url) === index).slice(0, 1);
     if (result.images.length) result.warnings = result.warnings.filter((warning) => !/no image|image (?:url )?is (?:not )?included/i.test(warning));
     return NextResponse.json({ success: true, component: result, requestId });
   } catch (error) {

@@ -16,14 +16,14 @@ function privateAddress(address: string) {
   return false;
 }
 
-async function downloadImage(rawUrl: string) {
+async function downloadImage(rawUrl: string, sourceUrl = '') {
   let url = new URL(rawUrl);
   let response: Response | null = null;
   for (let redirects = 0; redirects < 4; redirects += 1) {
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error('Invalid image URL');
     const addresses = await lookup(url.hostname, { all: true });
     if (!addresses.length || addresses.some(({ address }) => privateAddress(address))) throw new Error('Image host is not allowed');
-    response = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(12_000), headers: { Accept: 'image/*', 'User-Agent': 'MacSunny-Smart-Manager/1.0' } });
+    response = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(12_000), headers: { Accept: 'image/*', 'User-Agent': 'Mozilla/5.0 (compatible; MacSunny/1.0)', ...(sourceUrl ? { Referer: sourceUrl } : {}) } });
     if (![301, 302, 303, 307, 308].includes(response.status)) break;
     const location = response.headers.get('location');
     if (!location) throw new Error('The selected image redirect is invalid');
@@ -45,12 +45,17 @@ export async function POST(request: Request) {
   if ((await cookies()).get('ms_admin')?.value !== '1') return NextResponse.json({ success: false, message: 'Unauthorized', requestId }, { status: 401 });
   let newlyUploaded: string | null = null;
   try {
-    const { sku, url, alt } = await request.json();
+    const { sku, url, fallbackUrl, sourceUrl, alt } = await request.json();
     if (!sku || !url) return NextResponse.json({ success: false, message: 'SKU and image URL are required', requestId }, { status: 400 });
     await connectDB();
     const product = await ProductModel.findOne({ sku: String(sku).trim() }).select('+imageStorageKey');
     if (!product) return NextResponse.json({ success: false, message: 'Product not found', requestId }, { status: 404 });
-    const file = await downloadImage(String(url));
+    let file: File;
+    try { file = await downloadImage(String(url), String(sourceUrl || '')); }
+    catch (primaryError) {
+      if (!fallbackUrl || fallbackUrl === url) throw primaryError;
+      file = await downloadImage(String(fallbackUrl), String(sourceUrl || ''));
+    }
     const uploaded = await uploadProductWebp(String(product._id), file);
     newlyUploaded = uploaded.pathname;
     const oldPath = product.imageStorageKey;

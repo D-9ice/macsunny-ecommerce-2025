@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Product, allProducts, writeAdmin, readAdmin, readCategories, writeCategories } from '@/app/lib/products';
+import { Product, allProducts } from '@/app/lib/products';
 import MongoStatus from '@/app/components/MongoStatus';
 import SmartProductManager from '@/app/components/SmartProductManager';
 import ComponentSearchBar from '@/app/components/ComponentSearchBar';
@@ -69,40 +69,6 @@ export default function InventoryPage() {
       setImageFile(file);
       if (imagePreview.startsWith('blob:')) URL.revokeObjectURL(imagePreview);
       setImagePreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleAddProduct = async () => {
-    if (!formData.sku || !formData.name || !formData.category || formData.price <= 0) {
-      alert('Please fill in all fields correctly');
-      return;
-    }
-
-    if (products.some(p => p.sku === formData.sku)) {
-      alert('SKU already exists!');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        if (imageFile) await uploadImage(formData.sku, imageFile, formData.name);
-        await loadProducts();
-        setShowAddForm(false);
-        resetForm();
-        alert('Product added successfully!');
-      } else {
-        const data = await response.json();
-        alert(data.message || 'Failed to add product');
-      }
-    } catch (error) {
-      console.error('Failed to add product:', error);
-      alert('Failed to add product');
     }
   };
 
@@ -353,22 +319,10 @@ export default function InventoryPage() {
             {showSmartManager ? 'Hide Smart Manager' : '⚡ Smart Manager'}
           </button>
           <button
-            onClick={() => setShowCategoryForm(!showCategoryForm)}
+            onClick={() => { setShowCategoryForm(true); setEditingCategory(null); setNewCategory(''); }}
             className="px-4 py-2 bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors"
           >
-            {showCategoryForm ? 'Cancel' : '+ Add Category'}
-          </button>
-          <button
-            onClick={() => {
-              setShowAddForm(true);
-              setEditingProduct(null);
-              setImageFile(null);
-              setImagePreview('/logo.svg');
-              setFormData({ sku: '', name: '', category: '', price: 0, imageUrl: null });
-            }}
-            className="px-4 py-2 bg-green-700 hover:bg-green-800 rounded-lg transition-colors"
-          >
-            + Add Product
+            + Add Category
           </button>
           <Link
             href="/admin/dashboard"
@@ -403,13 +357,16 @@ export default function InventoryPage() {
 
       {/* ⚡ Smart Product Manager - Unified Tool */}
       {showSmartManager && (
-        <SmartProductManager onComplete={loadProducts} />
+        <SmartProductManager onComplete={loadProducts} onClose={() => setShowSmartManager(false)} />
       )}
 
       {showCategoryForm && (
-        <div className="mb-8 bg-blue-900/20 border border-blue-700 rounded-xl p-6">
+        <div className="fixed inset-0 z-[120] grid place-items-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-labelledby="category-dialog-title">
+          <div className="w-full max-w-3xl max-h-[85dvh] overflow-y-auto bg-slate-950 border border-blue-600 rounded-2xl p-6 shadow-2xl">
             <h2 className="text-xl font-semibold mb-4">
+              <span id="category-dialog-title">
               {editingCategory ? 'Edit Category' : 'Add New Category'}
+              </span>
             </h2>
             <div className="flex gap-3">
               <input
@@ -478,12 +435,14 @@ export default function InventoryPage() {
               </div>
             </div>
           </div>
+        </div>
         )}
 
-        {showAddForm && (
-          <div className="mb-8 bg-gray-900 rounded-xl p-6">
+        {showAddForm && editingProduct && (
+          <div className="fixed inset-0 z-[120] grid place-items-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-label="Edit product">
+          <div className="w-full max-w-3xl max-h-[90dvh] overflow-y-auto bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-2xl">
             <h2 className="text-xl font-semibold mb-4">
-              {editingProduct ? 'Edit Product' : 'Add New Product'}
+              Edit Product
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -575,7 +534,7 @@ export default function InventoryPage() {
 
                     <div className="text-center">
                       <p className="text-sm text-gray-300 mb-2">
-                        {isDragging ? 'Drop to upload' : (editingProduct ? 'Drop an image or click to replace' : 'Drop an image here or click to upload')}
+                        {isDragging ? 'Drop to upload' : 'Drop an image or click to replace'}
                       </p>
 
                       <div className="inline-flex items-center gap-2">
@@ -604,7 +563,7 @@ export default function InventoryPage() {
                 </div>
 
                 <p className="text-xs text-gray-400 mt-2">
-                  {editingProduct ? 'Upload a new image to replace the current one' : 'Upload a product image'} (max 5MB).
+                  Upload a new image to replace the current one (max 5MB).
                 </p>
 
                 {editingProduct && (
@@ -626,10 +585,10 @@ export default function InventoryPage() {
 
             <div className="flex gap-3 mt-4">
               <button
-                onClick={editingProduct ? handleUpdateProduct : handleAddProduct}
+                onClick={handleUpdateProduct}
                 className="px-6 py-2 bg-green-700 hover:bg-green-800 rounded-lg transition-colors"
               >
-                {editingProduct ? 'Update Product' : 'Add Product'}
+                Update Product
               </button>
               <button
                 onClick={() => {
@@ -641,6 +600,7 @@ export default function InventoryPage() {
                 Cancel
               </button>
             </div>
+          </div>
           </div>
         )}
 
@@ -693,7 +653,7 @@ export default function InventoryPage() {
 
         {products.length === 0 && (
           <div className="text-center py-12 text-gray-400">
-            No products in inventory. Click &quot;Add Product&quot; to get started.
+            No products in inventory. Open Super Smart Manager to add components.
           </div>
         )}
       </div>

@@ -9,6 +9,15 @@ export type Product = {
   imageAlt?: string | null;
   description?: string;
   quantity?: number;
+  manufacturer?: string;
+  mpn?: string;
+  package?: string;
+  pinCount?: string;
+  datasheetUrl?: string;
+  specifications?: Array<{ label: string; value: string }>;
+  verificationSources?: Array<{ title: string; url: string; kind: string }>;
+  verificationConfidence?: number;
+  verificationStatus?: 'verified' | 'needs-review';
 };
 
 export const products: Product[] = [
