@@ -137,7 +137,6 @@ Return JSON:
       name,
       category,
       sku,
-      estimatedPrice: category === 'Resistors' ? 0.5 : category === 'Capacitors' ? 1.2 : 2.0,
       confidence: 95,
       specifications: specs,
       provider: 'ChatGPT-4o (Colors) + Math (Values)',

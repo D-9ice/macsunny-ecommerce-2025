@@ -412,7 +412,6 @@ export async function POST(request: NextRequest) {
     let sku: string;
     let value: string;
     let specifications: string;
-    let estimatedPrice: number;
 
     if (comp.resistor.is_resistor && comp.resistor.is_color_band_resistor) {
       const ohms = comp.resistor.value_ohms || 0;
@@ -441,7 +440,6 @@ export async function POST(request: NextRequest) {
       specifications = `${comp.resistor.bands.join(
         "-"
       )} = ${valStr} ±${tol}%`;
-      estimatedPrice = 0.5;
     } else if (comp.resistor.is_resistor && !comp.resistor.is_color_band_resistor) {
       const ohms =
         comp.resistor.value_ohms || comp.electrical.nominal_value || 0;
@@ -470,7 +468,6 @@ export async function POST(request: NextRequest) {
         }, Package: ${comp.mechanical.package || "CEMENT"}, Power: ${
           comp.resistor.power_rating_watts || "N/A"
         }W`;
-        estimatedPrice = 0.3;
       } else {
         name = `${valStr} SMD Resistor ${
           comp.mechanical.package || "Unknown"
@@ -481,7 +478,6 @@ export async function POST(request: NextRequest) {
         specifications = `SMD Code: ${
           comp.markings.smd_code || "N/A"
         }, Package: ${comp.mechanical.package || "Unknown"}`;
-        estimatedPrice = 0.3;
       }
     } else if (comp.component_type === "capacitor") {
       const capVal = comp.electrical.nominal_value || 0;
@@ -495,7 +491,6 @@ export async function POST(request: NextRequest) {
       specifications = `${capVal}${unit} ${voltage}V, Package: ${
         comp.mechanical.package || "Unknown"
       }`;
-      estimatedPrice = 1.2;
     } else if (comp.component_type === "ic") {
       const partNum = comp.markings.primary_text || "Unknown IC";
       name = `${partNum} Integrated Circuit`;
@@ -505,7 +500,6 @@ export async function POST(request: NextRequest) {
       specifications = `Package: ${
         comp.mechanical.package || "Unknown"
       }, Pins: ${comp.mechanical.pins || "N/A"}`;
-      estimatedPrice = 5.0;
     } else {
       name = comp.description || "Component – please review";
       sku = `${comp.component_type.toUpperCase()}-${Date.now()
@@ -514,7 +508,6 @@ export async function POST(request: NextRequest) {
       category = "Other";
       value = comp.markings.primary_text || "N/A";
       specifications = comp.meta.notes || "";
-      estimatedPrice = 2.0;
     }
 
     return NextResponse.json({
@@ -522,7 +515,6 @@ export async function POST(request: NextRequest) {
       name,
       category,
       sku,
-      estimatedPrice,
       confidence: Math.round((comp.meta.confidence || 0) * 100),
       specifications,
       provider: "GPT-5.1 ComponentID-5 + deterministic colour engine",

@@ -81,6 +81,16 @@ const ProductSchema = new mongoose.Schema(
     image: { type: String, select: false },
     description: { type: String, default: '' },
     quantity: { type: Number, default: 0 },
+    manufacturer: { type: String, default: '' },
+    mpn: { type: String, default: '' },
+    package: { type: String, default: '' },
+    pinCount: { type: String, default: '' },
+    datasheetUrl: { type: String, default: '' },
+    specifications: [{ label: String, value: String }],
+    verificationSources: [{ title: String, url: String, kind: String }],
+    verificationConfidence: { type: Number, default: null },
+    verificationStatus: { type: String, enum: ['verified', 'needs-review', null], default: null },
+    imageSourceUrl: { type: String, default: '' },
   },
   { timestamps: true }
 );
