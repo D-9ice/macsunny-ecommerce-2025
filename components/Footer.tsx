@@ -25,7 +25,7 @@ export default function Footer() {
             href="https://www.mtn.com.gh/personal/momo/" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="rounded-full bg-yellow-400 px-4 py-1 font-semibold text-black transition-all hover:scale-105 hover:shadow-lg cursor-pointer"
+            className="inline-flex h-11 w-48 items-center justify-center rounded-full bg-yellow-400 px-4 font-semibold text-black transition-all hover:scale-105 hover:shadow-lg cursor-pointer"
           >
             MTN MoMo
           </a>
@@ -33,7 +33,7 @@ export default function Footer() {
             href="https://www.airteltigo.com.gh/airteltigo-money" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="rounded-full bg-blue-600 px-4 py-1 font-semibold text-white transition-all hover:scale-105 hover:shadow-lg cursor-pointer"
+            className="inline-flex h-11 w-48 items-center justify-center rounded-full bg-blue-600 px-4 font-semibold text-white transition-all hover:scale-105 hover:shadow-lg cursor-pointer"
           >
             AirtelTigo Cash
           </a>
@@ -41,17 +41,9 @@ export default function Footer() {
             href="https://telecelghana.com/personal/mobile-financial-services/" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="rounded-full bg-red-600 px-4 py-1 font-semibold text-white transition-all hover:scale-105 hover:shadow-lg cursor-pointer"
+            className="inline-flex h-11 w-48 items-center justify-center rounded-full bg-red-600 px-4 font-semibold text-white transition-all hover:scale-105 hover:shadow-lg cursor-pointer"
           >
             Telecel
-          </a>
-          <a 
-            href="https://paystack.com" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="rounded-full bg-white px-4 py-1 font-semibold text-gray-900 transition-all hover:scale-105 hover:shadow-lg cursor-pointer border-2 border-gray-300"
-          >
-            Visa / MasterCard
           </a>
         </div>
       </div>
