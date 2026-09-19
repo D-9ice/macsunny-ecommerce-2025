@@ -8,6 +8,8 @@ import { Product } from './lib/products';
 import { addToCart, getCart } from './lib/cart';
 import { showToast } from './components/Toast';
 import WhatsAppFab from './components/WhatsAppFab';
+import AIChatFab from './components/AIChatFab';
+import LocationFab from './components/LocationFab';
 
 type Pagination = { page: number; pages: number; total: number; limit: number };
 const fallbackCategories = ['Integrated Circuits', 'Semiconductors', 'Resistors', 'Capacitors', 'Modules', 'Connectors'];
@@ -47,6 +49,8 @@ function Storefront() {
     </section>
     <section className="trust-grid"><div><ShieldCheck/><span><b>Quality checked</b><small>Components sourced with care</small></span></div><div><Truck/><span><b>Delivery across Ghana</b><small>Flexible delivery arrangements</small></span></div><div><Headphones/><span><b>Human technical support</b><small>Get help finding the right part</small></span></div></section>
     <WhatsAppFab />
+    <AIChatFab />
+    <LocationFab />
   </main>;
 }
 
