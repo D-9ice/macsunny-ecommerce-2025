@@ -44,8 +44,10 @@ export async function POST(request: Request) {
   const requestId = crypto.randomUUID();
   if ((await cookies()).get('ms_admin')?.value !== '1') return NextResponse.json({ success: false, message: 'Unauthorized', requestId }, { status: 401 });
   let newlyUploaded: string | null = null;
+  let remoteFallback: { sku: string; url: string; sourceUrl: string; alt: string } | null = null;
   try {
     const { sku, url, fallbackUrl, sourceUrl, alt } = await request.json();
+    remoteFallback = { sku: String(sku || '').trim(), url: String(url || ''), sourceUrl: String(sourceUrl || ''), alt: String(alt || '') };
     if (!sku || !url) return NextResponse.json({ success: false, message: 'SKU and image URL are required', requestId }, { status: 400 });
     await connectDB();
     const product = await ProductModel.findOne({ sku: String(sku).trim() }).select('+imageStorageKey');
@@ -64,6 +66,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, imageUrl: uploaded.url, requestId });
   } catch (error) {
     await deleteBlobSafely(newlyUploaded);
+    if (remoteFallback?.sku) {
+      try {
+        const directUrl = new URL(remoteFallback.url);
+        if (['http:', 'https:'].includes(directUrl.protocol)) {
+          await connectDB();
+          const product = await ProductModel.findOne({ sku: remoteFallback.sku });
+          if (product) {
+            product.set({ imageUrl: directUrl.toString(), imageAlt: remoteFallback.alt.slice(0, 180) || product.name, imageSourceUrl: remoteFallback.sourceUrl.slice(0, 2000) || directUrl.toString(), imageMigrationStatus: 'pending', imageMigrationError: 'Remote source blocked archival; serving approved source image.' });
+            await product.save();
+            console.warn('product.remote-image.hotlink-fallback', { requestId, sku: remoteFallback.sku });
+            return NextResponse.json({ success: true, imageUrl: directUrl.toString(), storage: 'remote-fallback', requestId });
+          }
+        }
+      } catch (fallbackError) { console.error('product.remote-image.fallback.failed', { requestId, fallbackError }); }
+    }
     console.error('product.remote-image.failed', { requestId, error });
     return NextResponse.json({ success: false, message: error instanceof Error ? error.message : 'Image import failed', requestId }, { status: 422 });
   }

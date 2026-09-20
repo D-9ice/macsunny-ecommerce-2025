@@ -47,10 +47,16 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { sku, name, category, price, description = '', quantity = 0 } = body;
     if (!sku?.trim() || !name?.trim() || !category?.trim() || !Number.isFinite(Number(price)) || Number(price) <= 0) return NextResponse.json({ success: false, message: 'A positive admin-entered price and all required product fields are required' }, { status: 400 });
+    const normalizedSku = String(sku).trim();
+    const normalizedMpn = String(body.mpn || '').trim();
+    const duplicateMatchers: Record<string, unknown>[] = [{ sku: new RegExp(`^${safeRegex(normalizedSku)}$`, 'i') }];
+    if (normalizedMpn) duplicateMatchers.push({ mpn: new RegExp(`^${safeRegex(normalizedMpn)}$`, 'i') });
+    const existing = await ProductModel.findOne({ $or: duplicateMatchers }).select('sku mpn name').lean() as unknown as { sku: string; mpn?: string; name: string } | null;
+    if (existing) return NextResponse.json({ success: false, message: `Duplicate rejected: ${existing.name} (${existing.sku}) is already in inventory.` }, { status: 409 });
     const product = await ProductModel.create({
-      sku: sku.trim(), name: name.trim(), category: category.trim(), price: Number(price),
+      sku: normalizedSku, name: name.trim(), category: category.trim(), price: Number(price),
       description: String(description).slice(0, 2000), quantity: Number(quantity) || 0,
-      manufacturer: String(body.manufacturer || '').slice(0, 120), mpn: String(body.mpn || '').slice(0, 120),
+      manufacturer: String(body.manufacturer || '').slice(0, 120), mpn: normalizedMpn.slice(0, 120),
       package: String(body.package || '').slice(0, 120), pinCount: String(body.pinCount || '').slice(0, 40),
       datasheetUrl: safeUrl(body.datasheetUrl), specifications: safeSpecs(body.specifications),
       verificationSources: safeSources(body.verificationSources),

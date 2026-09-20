@@ -13,6 +13,17 @@ export const extractSchema = {
   },
 } as const;
 
+export const visualIdentitySchema = {
+  type: 'object', additionalProperties: false,
+  required: ['subjectType', 'primaryIdentity', 'brand', 'model', 'searchQuery', 'wholeObjectDescription', 'visibleMarkings', 'confidence', 'warnings'],
+  properties: {
+    subjectType: { type: 'string', enum: ['discrete_component', 'passive_component', 'module', 'development_board', 'replacement_board', 'pcb', 'appliance', 'audio_equipment', 'electromechanical', 'material', 'tool', 'accessory', 'unknown'] },
+    primaryIdentity: { type: 'string' }, brand: { type: 'string' }, model: { type: 'string' }, searchQuery: { type: 'string' },
+    wholeObjectDescription: { type: 'string' }, visibleMarkings: { type: 'array', maxItems: 12, items: { type: 'string' } },
+    confidence: { type: 'number', minimum: 0, maximum: 100 }, warnings: { type: 'array', maxItems: 6, items: { type: 'string' } },
+  },
+} as const;
+
 export const componentSchema = {
   type: 'object', additionalProperties: false,
   required: ['verified', 'confidence', 'partNumber', 'manufacturer', 'name', 'category', 'package', 'pinCount', 'summary', 'specifications', 'datasheetUrl', 'sources', 'images', 'warnings'],

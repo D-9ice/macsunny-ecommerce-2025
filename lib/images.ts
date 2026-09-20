@@ -22,7 +22,8 @@ export async function convertToWebp(file: File) {
 export async function uploadProductWebp(productId: string, file: File) {
   const converted = await convertToWebp(file);
   const environment = process.env.VERCEL_ENV === 'production' ? 'production' : 'preview';
-  const prefix = process.env.MACSUNNY_BLOB_PREFIX || `${environment}/products`;
+  const configuredPrefix = process.env.MACSUNNY_BLOB_PREFIX || `${environment}/products`;
+  const prefix = configuredPrefix.trim().replace(/\s+/g, '').replace(/^\/+|\/+$/g, '') || `${environment}/products`;
   const token = crypto.randomUUID().replaceAll('-', '').slice(0, 16);
   const pathname = `${prefix}/${productId}/${Date.now()}-${token}.webp`;
   const blob = await put(pathname, converted.buffer, { access: 'public', contentType: 'image/webp', addRandomSuffix: false });
