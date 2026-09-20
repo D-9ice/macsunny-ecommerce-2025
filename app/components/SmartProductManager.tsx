@@ -17,7 +17,7 @@ type Draft = {
 type Workspace = 'add' | 'inventory' | 'categories';
 
 const makeSku = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 36) || `PART-${Date.now()}`;
-const isKnownIdentity = (value: string) => Boolean(value.trim()) && !/^(?:not identified|unknown(?: electronics item| component)?|n\/a|not applicable)$/i.test(value.trim());
+const isKnownIdentity = (value: string) => Boolean(value.trim()) && !/^(?:not identified|unknown(?:\s*\/\s*unmarked)?|unknown(?: electronics item| component)?|unmarked|generic|n\/a|not applicable)$/i.test(value.trim());
 const fileDataUrl = (file: File) => new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = reject; reader.readAsDataURL(file); });
 const inputClass = 'w-full rounded-xl border border-slate-600 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-violet-400';
 
