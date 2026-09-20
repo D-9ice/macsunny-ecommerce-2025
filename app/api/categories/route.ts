@@ -1,26 +1,16 @@
 import { NextResponse } from 'next/server';
-import { connectDB, ProductModel, CategoryModel } from '@/app/lib/mongodb';
+import { cookies } from 'next/headers';
+import { connectDB, CategoryModel } from '@/app/lib/mongodb';
 
-// GET all unique categories from both Category collection and Products
+const isAdmin = async () => (await cookies()).get('ms_admin')?.value === '1';
+
+// Category Manager is the single source of truth.
 export async function GET() {
   try {
     await connectDB();
     
-    // Get categories from Category collection
     const categoryDocs = await CategoryModel.find({}).select('name');
-    const categoriesFromCollection = categoryDocs.map((doc: any) => doc.name);
-    
-    // Get unique categories from products
-    const categoriesFromProducts = await ProductModel.distinct('category');
-    
-    // Combine both sources and remove duplicates
-    const allCategories = [
-      ...categoriesFromCollection,
-      ...categoriesFromProducts
-    ];
-    
-    // Filter out empty/null categories, remove duplicates, and sort
-    const validCategories = [...new Set(allCategories)]
+    const validCategories = [...new Set(categoryDocs.map((doc: { name?: string }) => String(doc.name || '').trim()))]
       .filter((cat: string) => cat && cat.trim())
       .sort((a: string, b: string) => a.localeCompare(b));
 
@@ -39,6 +29,7 @@ export async function GET() {
 
 // POST - Add a new category
 export async function POST(request: Request) {
+  if (!(await isAdmin())) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   try {
     await connectDB();
     const { name } = await request.json();
@@ -51,7 +42,8 @@ export async function POST(request: Request) {
     }
     
     // Check if category already exists
-    const existing = await CategoryModel.findOne({ name: name.trim() });
+    const escaped = name.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const existing = await CategoryModel.findOne({ name: new RegExp(`^${escaped}$`, 'i') });
     if (existing) {
       return NextResponse.json(
         { success: false, message: 'Category already exists' },
@@ -78,6 +70,7 @@ export async function POST(request: Request) {
 
 // DELETE - Remove a category
 export async function DELETE(request: Request) {
+  if (!(await isAdmin())) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);

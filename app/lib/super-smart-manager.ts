@@ -15,11 +15,12 @@ export const extractSchema = {
 
 export const visualIdentitySchema = {
   type: 'object', additionalProperties: false,
-  required: ['subjectType', 'primaryIdentity', 'brand', 'model', 'searchQuery', 'wholeObjectDescription', 'visibleMarkings', 'confidence', 'warnings'],
+  required: ['subjectType', 'primaryIdentity', 'inventoryIdentifier', 'brand', 'model', 'searchQuery', 'wholeObjectDescription', 'visibleMarkings', 'picturedItemCount', 'displayImageSuitable', 'confidence', 'warnings'],
   properties: {
     subjectType: { type: 'string', enum: ['discrete_component', 'passive_component', 'module', 'development_board', 'replacement_board', 'pcb', 'appliance', 'audio_equipment', 'electromechanical', 'material', 'tool', 'accessory', 'unknown'] },
-    primaryIdentity: { type: 'string' }, brand: { type: 'string' }, model: { type: 'string' }, searchQuery: { type: 'string' },
+    primaryIdentity: { type: 'string' }, inventoryIdentifier: { type: 'string' }, brand: { type: 'string' }, model: { type: 'string' }, searchQuery: { type: 'string' },
     wholeObjectDescription: { type: 'string' }, visibleMarkings: { type: 'array', maxItems: 12, items: { type: 'string' } },
+    picturedItemCount: { type: 'integer', minimum: 1 }, displayImageSuitable: { type: 'boolean' },
     confidence: { type: 'number', minimum: 0, maximum: 100 }, warnings: { type: 'array', maxItems: 6, items: { type: 'string' } },
   },
 } as const;

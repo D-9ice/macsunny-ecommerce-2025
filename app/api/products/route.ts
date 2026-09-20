@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { connectDB, ProductModel } from '@/app/lib/mongodb';
+import { connectDB, ProductModel, CategoryModel } from '@/app/lib/mongodb';
 import { deleteBlobSafely } from '@/lib/images';
 
 const projection = 'sku name category price imageUrl imageAlt description quantity manufacturer mpn package pinCount datasheetUrl specifications verificationSources verificationConfidence verificationStatus imageSourceUrl createdAt updatedAt';
@@ -10,6 +10,13 @@ const publicProduct = (item: Record<string, unknown>) => ({ ...item, image: item
 const safeUrl = (value: unknown) => { try { const url = new URL(String(value || '')); return ['http:', 'https:'].includes(url.protocol) ? url.toString() : ''; } catch { return ''; } };
 const safeSpecs = (value: unknown) => Array.isArray(value) ? value.slice(0, 8).map((item) => ({ label: String(item?.label || '').slice(0, 80), value: String(item?.value || '').slice(0, 180) })).filter((item) => item.label && item.value) : [];
 const safeSources = (value: unknown) => Array.isArray(value) ? value.slice(0, 8).map((item) => ({ title: String(item?.title || '').slice(0, 180), url: safeUrl(item?.url), kind: String(item?.kind || 'other').slice(0, 40) })).filter((item) => item.url) : [];
+async function managedCategory(value: unknown) {
+  const requested = String(value || '').trim();
+  if (!requested) return '';
+  const exact = new RegExp(`^${safeRegex(requested)}$`, 'i');
+  const category = await CategoryModel.findOne({ name: exact }).select('name').lean() as unknown as { name?: string } | null;
+  return String(category?.name || '').trim();
+}
 
 export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
@@ -47,6 +54,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { sku, name, category, price, description = '', quantity = 0 } = body;
     if (!sku?.trim() || !name?.trim() || !category?.trim() || !Number.isFinite(Number(price)) || Number(price) <= 0) return NextResponse.json({ success: false, message: 'A positive admin-entered price and all required product fields are required' }, { status: 400 });
+    const canonicalCategory = await managedCategory(category);
+    if (!canonicalCategory) return NextResponse.json({ success: false, message: 'Select a category created in Category Manager before publishing.' }, { status: 400 });
     const normalizedSku = String(sku).trim();
     const normalizedMpn = String(body.mpn || '').trim();
     if (/^(?:NOT-IDENTIFIED|UNKNOWN|N-A|NOT-APPLICABLE)$/i.test(normalizedSku) || /^(?:not identified|unknown|n\/a|not applicable)$/i.test(normalizedMpn)) return NextResponse.json({ success: false, message: 'Identify the exact product or enter a valid SKU before publishing.' }, { status: 400 });
@@ -55,7 +64,7 @@ export async function POST(request: Request) {
     const existing = await ProductModel.findOne({ $or: duplicateMatchers }).select('sku mpn name').lean() as unknown as { sku: string; mpn?: string; name: string } | null;
     if (existing) return NextResponse.json({ success: false, message: `Duplicate rejected: ${existing.name} (${existing.sku}) is already in inventory.` }, { status: 409 });
     const product = await ProductModel.create({
-      sku: normalizedSku, name: name.trim(), category: category.trim(), price: Number(price),
+      sku: normalizedSku, name: name.trim(), category: canonicalCategory, price: Number(price),
       description: String(description).slice(0, 2000), quantity: Number(quantity) || 0,
       manufacturer: String(body.manufacturer || '').slice(0, 120), mpn: normalizedMpn.slice(0, 120),
       package: String(body.package || '').slice(0, 120), pinCount: String(body.pinCount || '').slice(0, 40),
@@ -76,7 +85,9 @@ export async function PUT(request: Request) {
   await connectDB();
   const body = await request.json();
   if (!body.sku || !Number.isFinite(Number(body.price)) || Number(body.price) <= 0) return NextResponse.json({ success: false, message: 'SKU and a positive admin-entered price are required' }, { status: 400 });
-  const update: Record<string, unknown> = { name: body.name, category: body.category, price: Number(body.price), description: body.description || '', quantity: Number(body.quantity) || 0 };
+  const canonicalCategory = await managedCategory(body.category);
+  if (!canonicalCategory) return NextResponse.json({ success: false, message: 'Select a category created in Category Manager.' }, { status: 400 });
+  const update: Record<string, unknown> = { name: body.name, category: canonicalCategory, price: Number(body.price), description: body.description || '', quantity: Number(body.quantity) || 0 };
   if ('manufacturer' in body) update.manufacturer = String(body.manufacturer || '').slice(0, 120);
   if ('mpn' in body) update.mpn = String(body.mpn || '').slice(0, 120);
   if ('package' in body) update.package = String(body.package || '').slice(0, 120);
