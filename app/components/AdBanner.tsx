@@ -66,7 +66,7 @@ export default function AdBanner() {
           <div>
             {/* Logo at Top Left */}
             <div className="flex items-start mb-2">
-              <img 
+              <Image
                 src="/frontier-logo.jpg" 
                 alt="Frontier DevConsults Logo" 
                 width={60} 

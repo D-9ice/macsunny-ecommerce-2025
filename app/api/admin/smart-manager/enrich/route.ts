@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { componentSchema, normalizeIdentifier, openAI, parseJson, safeHttpUrl, SMART_MANAGER_MODEL } from '@/app/lib/super-smart-manager';
+import { deleteBlobSafely, uploadAnalysisWebp } from '@/lib/images';
 
 export const runtime = 'nodejs';
 
@@ -12,11 +13,19 @@ const placeholderIdentity = /^(?:not identified|unknown(?:\s*\/\s*unmarked)?|unk
 export async function POST(request: Request) {
   const requestId = crypto.randomUUID();
   if ((await cookies()).get('ms_admin')?.value !== '1') return NextResponse.json({ success: false, message: 'Unauthorized', requestId }, { status: 401 });
+  let temporaryBlob: string | undefined;
   try {
-    const body = await request.json();
-    const identifier = normalizeIdentifier(String(body.identifier || ''));
-    const managedCategories = Array.isArray(body.categories) ? [...new Set(body.categories.map((value: unknown) => String(value).trim()).filter(Boolean))].slice(0, 100) as string[] : [];
-    const image = typeof body.image === 'string' && /^data:image\/(jpeg|png|webp);base64,/i.test(body.image) ? body.image : '';
+    const form = await request.formData();
+    const identifier = normalizeIdentifier(String(form.get('identifier') || ''));
+    let requestedCategories: unknown = [];
+    try { requestedCategories = JSON.parse(String(form.get('categories') || '[]')); } catch { requestedCategories = []; }
+    const managedCategories = Array.isArray(requestedCategories) ? [...new Set(requestedCategories.map((value: unknown) => String(value).trim()).filter(Boolean))].slice(0, 100) as string[] : [];
+    const file = form.get('file');
+    if (file instanceof File && file.type !== 'image/webp') return NextResponse.json({ success: false, message: 'Component photos must be WebP.', requestId }, { status: 415 });
+    if (file instanceof File && file.size > 3_000_000) return NextResponse.json({ success: false, message: 'Component photos must be smaller than 3 MB.', requestId }, { status: 400 });
+    const uploaded = file instanceof File && file.size ? await uploadAnalysisWebp(file) : undefined;
+    temporaryBlob = uploaded?.pathname;
+    const image = uploaded?.url || '';
     if (!identifier && !image) return NextResponse.json({ success: false, message: 'Enter a part number or upload a component image.', requestId }, { status: 400 });
     const categorySchema = managedCategories.length ? { ...componentSchema, properties: { ...componentSchema.properties, category: { type: 'string', enum: managedCategories } } } : componentSchema;
     const content: Array<Record<string, unknown>> = [{ type: 'input_text', text: `Identify and verify this SELLABLE ELECTRONICS INVENTORY ITEM: ${identifier || '(inspect the supplied image)'}.
@@ -77,5 +86,7 @@ For images, return only actual product photographs of this same WHOLE item. Excl
   } catch (error) {
     console.error('smart-manager.enrich.failed', { requestId, error });
     return NextResponse.json({ success: false, message: 'Internet verification failed. Please retry or enter the details manually.', requestId }, { status: 500 });
+  } finally {
+    await deleteBlobSafely(temporaryBlob);
   }
 }

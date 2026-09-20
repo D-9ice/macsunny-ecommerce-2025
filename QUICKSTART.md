@@ -17,7 +17,7 @@ Edit `.env.local` and add your MongoDB connection:
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/macsunny
 DATABASE_URL=mongodb+srv://username:password@cluster.mongodb.net/macsunny
 ADMIN_PASSWORD=your_password_here
-NEXTAUTH_SECRET=run_openssl_rand_base64_32
+NEXTAUTH_SECRET=run_openssl_rand_hex_32
 NEXTAUTH_URL=http://localhost:3000
 ```
 

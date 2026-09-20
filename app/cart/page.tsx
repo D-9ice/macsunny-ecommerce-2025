@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { CartItem, getCart, setQty, removeFromCart, cartTotal } from '@/app/lib/cart';
 
@@ -51,9 +52,12 @@ export default function CartPage() {
               >
                 {/* Product Image */}
                 <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-black/60">
-                  <img
+                  <Image
                     src={item.image || '/macsunny-logo.png'}
                     alt={item.name}
+                    width={96}
+                    height={96}
+                    sizes="96px"
                     className="h-full w-full object-contain"
                     onError={(e) => {
                       const target = e.currentTarget;

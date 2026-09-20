@@ -59,7 +59,7 @@ git push -u origin main
 
    **Generate NEXTAUTH_SECRET:**
    ```bash
-   openssl rand -base64 32
+   openssl rand -hex 32
    ```
 
 3. **Deploy**

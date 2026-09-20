@@ -30,6 +30,15 @@ export async function uploadProductWebp(productId: string, file: File) {
   return { ...converted, url: blob.url, pathname: blob.pathname };
 }
 
+export async function uploadAnalysisWebp(file: File) {
+  const converted = await convertToWebp(file);
+  const pathname = `temporary/smart-manager/${Date.now()}-${crypto.randomUUID()}.webp`;
+  const blob = await put(pathname, converted.buffer, {
+    access: 'public', contentType: 'image/webp', addRandomSuffix: false, cacheControlMaxAge: 60,
+  });
+  return { ...converted, url: blob.url, pathname: blob.pathname };
+}
+
 export async function deleteBlobSafely(pathname?: string | null) {
   if (!pathname) return;
   try { await del(pathname); } catch (error) { console.error('Blob cleanup failed', { pathname, error }); }

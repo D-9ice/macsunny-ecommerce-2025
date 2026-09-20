@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Search, Home, Wrench } from 'lucide-react';
 
@@ -28,9 +29,11 @@ export default function NotFound() {
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 py-12 text-center">
       <div className="mb-8 flex items-center gap-4">
-        <img
+        <Image
           src="/macsunny-logo.png"
           alt="MacSunny Electronics logo"
+          width={96}
+          height={96}
           className="h-24 w-24 animate-spin-horizontal"
         />
         <div className="text-left">

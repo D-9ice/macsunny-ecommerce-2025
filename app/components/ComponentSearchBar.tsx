@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { Product } from '@/app/lib/products';
 
 interface ComponentSearchBarProps {
@@ -226,9 +227,12 @@ export default function ComponentSearchBar({
                   onClick={(e) => e.stopPropagation()}
                   className="w-4 h-4 rounded border-gray-600 text-green-600 focus:ring-green-500"
                 />
-                <img
+                <Image
                   src={product.image || '/logo.svg'}
                   alt={product.name}
+                  width={48}
+                  height={48}
+                  sizes="48px"
                   className="w-12 h-12 object-contain rounded bg-black/60"
                   onError={(e) => {
                     e.currentTarget.src = '/logo.svg';

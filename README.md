@@ -80,7 +80,7 @@ DATABASE_URL=mongodb+srv://username:password@cluster.mongodb.net/macsunny
 ADMIN_PASSWORD=your_secure_password
 
 # Required for NextAuth
-NEXTAUTH_SECRET=generate_with_openssl_rand_base64_32
+NEXTAUTH_SECRET=generate_with_openssl_rand_hex_32
 NEXTAUTH_URL=http://localhost:3000
 
 # Required for Payments (get from Paystack dashboard)
