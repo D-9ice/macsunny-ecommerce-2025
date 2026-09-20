@@ -4,6 +4,7 @@ import { extractSchema, openAI, parseJson, SMART_MANAGER_MODEL, uniqueIdentifier
 import { deleteBlobSafely, uploadAnalysisWebp } from '@/lib/images';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   const requestId = crypto.randomUUID();
@@ -52,8 +53,13 @@ inventoryIdentifier must be a short stable engineering identity: use the exact v
     const parts = uniqueIdentifiers(parsed.parts.map((part) => part.identifier));
     return NextResponse.json({ success: true, parts, count: parts.length, requestId });
   } catch (error) {
-    console.error('smart-manager.extract.failed', { requestId, error });
-    return NextResponse.json({ success: false, message: 'The list could not be read. Try a clearer, tightly cropped image.', requestId }, { status: 500 });
+    const failure = error as { status?: number; code?: string; type?: string; message?: string };
+    console.error('smart-manager.extract.failed', { requestId, status: failure.status, code: failure.code, type: failure.type, message: failure.message });
+    if (failure.status === 429 && ['credit_balance_exhausted', 'insufficient_quota'].includes(failure.code || failure.type || '')) {
+      return NextResponse.json({ success: false, code: 'AI_CREDITS_EXHAUSTED', message: 'Photo and document recognition is temporarily unavailable because the OpenAI API credit balance is exhausted. Add API credits, then retry.', requestId }, { status: 503 });
+    }
+    if (failure.status === 429) return NextResponse.json({ success: false, code: 'AI_RATE_LIMITED', message: 'Recognition is temporarily rate-limited. Wait briefly, then retry.', requestId }, { status: 429 });
+    return NextResponse.json({ success: false, code: 'EXTRACTION_FAILED', message: 'The file could not be read. Try a clearer, tightly cropped image.', requestId }, { status: 500 });
   } finally {
     await deleteBlobSafely(temporaryBlob);
     if (openAIFileId) try { await openAI().files.delete(openAIFileId); } catch (error) { console.error('smart-manager.openai-file.cleanup.failed', { requestId, error }); }

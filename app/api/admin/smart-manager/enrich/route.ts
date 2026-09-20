@@ -4,6 +4,7 @@ import { componentSchema, normalizeIdentifier, openAI, parseJson, safeHttpUrl, S
 import { deleteBlobSafely, uploadAnalysisWebp } from '@/lib/images';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 type Result = { verified: boolean; confidence: number; partNumber: string; manufacturer: string; name: string; category: string; package: string; pinCount: string; summary: string; specifications: Array<{label:string;value:string}>; datasheetUrl: string; sources: Array<{title:string;url:string;kind:string}>; images: Array<{url:string;sourceUrl:string;title:string}>; warnings: string[] };
 
@@ -39,18 +40,13 @@ Return no more than 8 concise, category-appropriate engineer-facing specificatio
 For images, return only actual product photographs of this same WHOLE item. Exclude PDFs, datasheet/manual pages, screenshots, tables, diagrams, pinouts, schematics, logos, collages, unrelated onboard chips and generic category images. If the user supplied a photo, treat that photo as the authoritative product view and use web images only as optional alternatives.` }];
     if (image) content.push({ type: 'input_image', image_url: image, detail: 'high' });
     const client = openAI();
-    const [response, imageResponse] = await Promise.all([client.responses.create({
+    const response = await client.responses.create({
       model: SMART_MANAGER_MODEL, store: false,
       tools: [{ type: 'web_search', search_content_types: ['image', 'text'], image_settings: { max_results: 6, caption: true } }] as never,
       include: ['web_search_call.action.sources', 'web_search_call.results'] as never,
       input: [{ role: 'user', content }] as never,
       text: { format: { type: 'json_schema', name: 'verified_component', strict: true, schema: categorySchema } },
-    }), client.responses.create({
-      model: SMART_MANAGER_MODEL, store: false,
-      tools: [{ type: 'web_search', search_content_types: ['image'], image_settings: { max_results: 3, caption: true } }] as never,
-      include: ['web_search_call.results'] as never,
-      input: `Find an actual product photograph of this exact sellable electronics inventory item: ${identifier}. Match the whole object type: keep modules and replacement boards intact, keep genuine appliances/kits intact, and never substitute an onboard semiconductor. For loose components such as resistors, show exactly ONE complete component, not a lot, pack, repeated row, collage, or assortment. Prefer one complete item on a clean background. Exclude PDF or datasheet pages, manuals, screenshots, tables, diagrams, pinouts, schematics, logos, and unrelated or merely similar products.`,
-    })]);
+    });
     let result = parseJson<Result>(response.output_text);
     if (!result.partNumber.trim() || placeholderIdentity.test(result.partNumber.trim())) {
       const recovery = await client.responses.create({
@@ -70,7 +66,7 @@ For images, return only actual product photographs of this same WHOLE item. Excl
     if (!result.partNumber.trim() || placeholderIdentity.test(result.partNumber.trim())) { result.verified = false; result.confidence = Math.min(result.confidence, 35); }
     result.datasheetUrl = safeHttpUrl(result.datasheetUrl);
     result.sources = result.sources.map((source) => ({ ...source, url: safeHttpUrl(source.url) })).filter((source) => source.url);
-    const searchedImages = ([...response.output, ...imageResponse.output] as unknown as Array<Record<string, unknown>>).flatMap((item) => {
+    const searchedImages = (response.output as unknown as Array<Record<string, unknown>>).flatMap((item) => {
       const results = Array.isArray(item.results) ? item.results as Array<Record<string, unknown>> : [];
       return results.filter((entry) => entry.type === 'image_result').map((entry) => ({
         url: safeHttpUrl(entry.image_url || entry.thumbnail_url),
@@ -84,8 +80,13 @@ For images, return only actual product photographs of this same WHOLE item. Excl
     if (result.images.length) result.warnings = result.warnings.filter((warning) => !/no image|image (?:url )?is (?:not )?included/i.test(warning));
     return NextResponse.json({ success: true, component: result, requestId });
   } catch (error) {
-    console.error('smart-manager.enrich.failed', { requestId, error });
-    return NextResponse.json({ success: false, message: 'Internet verification failed. Please retry or enter the details manually.', requestId }, { status: 500 });
+    const failure = error as { status?: number; code?: string; type?: string; message?: string };
+    console.error('smart-manager.enrich.failed', { requestId, status: failure.status, code: failure.code, type: failure.type, message: failure.message });
+    if (failure.status === 429 && ['credit_balance_exhausted', 'insufficient_quota'].includes(failure.code || failure.type || '')) {
+      return NextResponse.json({ success: false, code: 'AI_CREDITS_EXHAUSTED', message: 'Online verification is temporarily unavailable because the OpenAI API credit balance is exhausted. Add API credits, then retry this component.', requestId }, { status: 503 });
+    }
+    if (failure.status === 429) return NextResponse.json({ success: false, code: 'AI_RATE_LIMITED', message: 'Online verification is temporarily rate-limited. Wait briefly, then retry.', requestId }, { status: 429 });
+    return NextResponse.json({ success: false, code: 'VERIFICATION_FAILED', message: 'Internet verification failed. Please retry; your component remains in the queue.', requestId }, { status: 500 });
   } finally {
     await deleteBlobSafely(temporaryBlob);
   }
