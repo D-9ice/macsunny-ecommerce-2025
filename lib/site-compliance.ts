@@ -5,7 +5,7 @@ import { connectDB, ComplianceAuditModel, ComplianceStateModel } from '@/app/lib
 export type GuardMode = 'ACTIVE' | 'WARNING' | 'SERVICE_LOCKED';
 export const OWNER_COOKIE = 'ms_owner_guard';
 
-function secret() { return process.env.MACSUNNY_GUARD_SECRET || ''; }
+function secret() { return (process.env.MACSUNNY_GUARD_SECRET || '').trim(); }
 export function ownerToken() { return crypto.createHmac('sha256', secret()).update('macsunny-owner-console-v1').digest('hex'); }
 export async function isOwner() {
   const value = (await cookies()).get(OWNER_COOKIE)?.value || '';

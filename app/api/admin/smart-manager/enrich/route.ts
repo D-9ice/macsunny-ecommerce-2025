@@ -7,6 +7,7 @@ export const runtime = 'nodejs';
 type Result = { verified: boolean; confidence: number; partNumber: string; manufacturer: string; name: string; category: string; package: string; pinCount: string; summary: string; specifications: Array<{label:string;value:string}>; datasheetUrl: string; sources: Array<{title:string;url:string;kind:string}>; images: Array<{url:string;sourceUrl:string;title:string}>; warnings: string[] };
 
 const forbiddenImage = /(?:\.pdf(?:$|[?#])|datasheet|data[-_ ]?sheet|alldatasheet|pinout|schematic|diagram|manual|document|application note|marking information|packaging information)/i;
+const placeholderIdentity = /^(?:not identified|unknown(?: electronics item| component)?|n\/a|not applicable)$/i;
 
 export async function POST(request: Request) {
   const requestId = crypto.randomUUID();
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
     const content: Array<Record<string, unknown>> = [{ type: 'input_text', text: `Identify and verify this SELLABLE ELECTRONICS INVENTORY ITEM: ${identifier || '(inspect the supplied image)'}.
 You MUST search the web. First classify the entire product as a passive/discrete component, module, development board, replacement PCB, appliance, audio/electromechanical item, material, tool, accessory, or kit. Preserve this hierarchy: complete appliance/kit > replacement board > assembled module > loose component. Never replace a board or module with an IC mounted on it. On-board IC markings are supporting evidence only.
 Prefer manufacturer product pages/manuals and official datasheets, then reputable distributors. Cross-check exact brand/model/part number when present. Never guess: set verified false and explain ambiguity in warnings when evidence conflicts. Package and pinCount may be "Not applicable" for assemblies, appliances and materials.
+Read prominent markings on the supplied product before searching. When a visible marking such as MQ-2 identifies a standard module, preserve it verbatim in partNumber and use it in the product name and search. Count visible module header pins when possible. Never return high confidence with a placeholder partNumber: if partNumber is unknown, verified must be false and confidence must be 35 or lower.
 Return no more than 8 concise, category-appropriate engineer-facing specifications: passives need value/tolerance/power/package; modules need function/input/output/interface/current/dimensions; replacement boards need compatible appliance/model, board number, function and connectors; audio/electromechanical items need model/type/impedance/power/dimensions as applicable; materials need material, dimensions, sides and thickness. Never return price, value, availability or purchasing advice.
 For images, return only actual product photographs of this same WHOLE item. Exclude PDFs, datasheet/manual pages, screenshots, tables, diagrams, pinouts, schematics, logos, collages, unrelated onboard chips and generic category images. If the user supplied a photo, treat that photo as the authoritative product view and use web images only as optional alternatives.` }];
     if (image) content.push({ type: 'input_image', image_url: image, detail: 'high' });
@@ -37,6 +39,7 @@ For images, return only actual product photographs of this same WHOLE item. Excl
     })]);
     const result = parseJson<Result>(response.output_text);
     result.confidence = result.confidence > 0 && result.confidence <= 1 ? Math.round(result.confidence * 100) : Math.round(result.confidence);
+    if (!result.partNumber.trim() || placeholderIdentity.test(result.partNumber.trim())) { result.verified = false; result.confidence = Math.min(result.confidence, 35); }
     result.datasheetUrl = safeHttpUrl(result.datasheetUrl);
     result.sources = result.sources.map((source) => ({ ...source, url: safeHttpUrl(source.url) })).filter((source) => source.url);
     const searchedImages = ([...response.output, ...imageResponse.output] as unknown as Array<Record<string, unknown>>).flatMap((item) => {

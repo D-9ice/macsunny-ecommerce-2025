@@ -49,6 +49,7 @@ export async function POST(request: Request) {
     if (!sku?.trim() || !name?.trim() || !category?.trim() || !Number.isFinite(Number(price)) || Number(price) <= 0) return NextResponse.json({ success: false, message: 'A positive admin-entered price and all required product fields are required' }, { status: 400 });
     const normalizedSku = String(sku).trim();
     const normalizedMpn = String(body.mpn || '').trim();
+    if (/^(?:NOT-IDENTIFIED|UNKNOWN|N-A|NOT-APPLICABLE)$/i.test(normalizedSku) || /^(?:not identified|unknown|n\/a|not applicable)$/i.test(normalizedMpn)) return NextResponse.json({ success: false, message: 'Identify the exact product or enter a valid SKU before publishing.' }, { status: 400 });
     const duplicateMatchers: Record<string, unknown>[] = [{ sku: new RegExp(`^${safeRegex(normalizedSku)}$`, 'i') }];
     if (normalizedMpn) duplicateMatchers.push({ mpn: new RegExp(`^${safeRegex(normalizedMpn)}$`, 'i') });
     const existing = await ProductModel.findOne({ $or: duplicateMatchers }).select('sku mpn name').lean() as unknown as { sku: string; mpn?: string; name: string } | null;

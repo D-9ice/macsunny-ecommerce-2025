@@ -42,12 +42,14 @@ export function clearCart() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(CART_KEY);
   localStorage.removeItem('macsunny_cart');
+  window.dispatchEvent(new Event('macsunny-cart-updated'));
 }
 
 export function setCart(items: CartItem[]) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(CART_KEY, JSON.stringify(items));
   localStorage.removeItem('macsunny_cart');
+  window.dispatchEvent(new Event('macsunny-cart-updated'));
 }
 
 export function addToCart(item: CartItemInput): CartItem[] {

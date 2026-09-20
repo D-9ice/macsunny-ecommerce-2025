@@ -11,8 +11,8 @@ export async function POST(request: Request) {
   const entry = attempts.get(ip);
   if (entry && entry.reset > now && entry.count >= 5) return NextResponse.json({ success: false, message: 'Too many attempts. Try again later.', requestId }, { status: 429 });
   const { passcode } = await request.json();
-  const expected = process.env.MACSUNNY_OWNER_PASSCODE || '';
-  const supplied = String(passcode || '');
+  const expected = (process.env.MACSUNNY_OWNER_PASSCODE || '').trim();
+  const supplied = String(passcode || '').trim();
   const valid = Boolean(expected) && supplied.length === expected.length && crypto.timingSafeEqual(Buffer.from(supplied), Buffer.from(expected));
   if (!valid) {
     attempts.set(ip, { count: entry?.reset && entry.reset > now ? entry.count + 1 : 1, reset: now + 15 * 60_000 });
