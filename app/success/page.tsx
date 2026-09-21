@@ -1,6 +1,5 @@
 'use client';
 import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { Suspense } from 'react';
 
 function SuccessContent() {
@@ -51,12 +50,12 @@ function SuccessContent() {
           </a>
         </p>
         
-        <Link
+        <a
           href="/"
           className="inline-block px-6 py-3 bg-green-700 force-white rounded-lg hover:bg-green-800 transition-colors"
         >
           Continue Shopping
-        </Link>
+        </a>
       </div>
     </main>
   );

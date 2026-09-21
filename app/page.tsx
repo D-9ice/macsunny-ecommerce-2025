@@ -4,7 +4,7 @@ import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from 'react
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowRight, Box, ChevronLeft, ChevronRight, Cpu, ExternalLink, Headphones, Search, ShieldCheck, ShoppingCart, Truck, X, Zap } from 'lucide-react';
+import { ArrowRight, Box, Check, ChevronLeft, ChevronRight, Cpu, ExternalLink, Headphones, Search, ShieldCheck, ShoppingCart, Truck, X, Zap } from 'lucide-react';
 import { Product } from './lib/products';
 import { addToCart, getCart } from './lib/cart';
 import { showToast } from './components/Toast';
@@ -21,8 +21,10 @@ function Storefront() {
   const [draft, setDraft] = useState(q), [products, setProducts] = useState<Product[]>([]), [pagination, setPagination] = useState<Pagination>({ page: 1, pages: 1, total: 0, limit: 50 });
   const [loading, setLoading] = useState(true), [error, setError] = useState(''), [retry, setRetry] = useState(0), [cartCount, setCartCount] = useState(0), [categories, setCategories] = useState<string[]>(fallbackCategories);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [recentlyAddedSku, setRecentlyAddedSku] = useState('');
   const [pageSize, setPageSize] = useState(50);
   const catalogueRef = useRef<HTMLElement>(null);
+  const addedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const queryString = useMemo(() => { const p = new URLSearchParams({ page: String(page), limit: String(pageSize) }); if (q) p.set('search', q); if (category) p.set('category', category); return p.toString(); }, [q, category, page, pageSize]);
   useEffect(() => { setDraft(q); }, [q]);
   useEffect(() => {
@@ -32,10 +34,31 @@ function Storefront() {
     return () => window.removeEventListener('resize', updatePageSize);
   }, []);
   useEffect(() => {
-    const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 12000);
+    let active = true;
+    let controller: AbortController | null = null;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
     setLoading(true); setError('');
-    fetch(`/api/products?${queryString}`, { signal: controller.signal }).then(async r => { const d = await r.json(); if (!r.ok || !d.success) throw new Error(d.message || 'Catalogue request failed'); setProducts(d.data || d.products || []); setPagination(d.pagination); }).catch(e => setError(e.name === 'AbortError' ? 'The catalogue took too long to respond.' : e.message)).finally(() => { clearTimeout(timeout); setLoading(false); });
-    return () => { clearTimeout(timeout); controller.abort(); };
+    const load = async () => {
+      let problem = 'Products could not be loaded right now.';
+      for (let attempt = 0; attempt < 2 && active; attempt += 1) {
+        controller = new AbortController();
+        timeout = setTimeout(() => controller?.abort(), attempt === 0 ? 12_000 : 20_000);
+        try {
+          const response = await fetch(`/api/products?${queryString}`, { signal: controller.signal, cache: 'no-store' });
+          const data = await response.json();
+          if (!response.ok || !data.success) throw new Error(data.message || 'Catalogue request failed');
+          if (active) { setProducts(data.data || data.products || []); setPagination(data.pagination); setError(''); }
+          return;
+        } catch (error) {
+          problem = error instanceof Error && error.name !== 'AbortError' ? error.message : 'The catalogue took too long to respond.';
+        } finally {
+          if (timeout) clearTimeout(timeout);
+        }
+      }
+      if (active) setError(problem);
+    };
+    void load().finally(() => { if (active) setLoading(false); });
+    return () => { active = false; if (timeout) clearTimeout(timeout); controller?.abort(); };
   }, [queryString, retry]);
   useEffect(() => {
     if (!loading && (q || category)) requestAnimationFrame(() => catalogueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
@@ -44,7 +67,8 @@ function Storefront() {
   useEffect(() => { const update = () => setCartCount(getCart().reduce((n, item) => n + item.qty, 0)); update(); window.addEventListener('storage', update); return () => window.removeEventListener('storage', update); }, []);
   const navigate = (updates: Record<string, string>) => { const next = new URLSearchParams(params.toString()); Object.entries(updates).forEach(([key, value]) => value ? next.set(key, value) : next.delete(key)); router.push(`/?${next.toString()}`); };
   const submit = (e: FormEvent) => { e.preventDefault(); navigate({ q: draft.trim(), page: '1' }); };
-  const add = (p: Product) => { addToCart({ sku: p.sku, name: p.name, price: p.price, image: p.imageUrl || p.image || '/macsunny-logo.png', qty: 1 }); setCartCount(getCart().reduce((n, item) => n + item.qty, 0)); showToast(`${p.name} added to cart`, 'success'); };
+  const add = (p: Product) => { addToCart({ sku: p.sku, name: p.name, price: p.price, image: p.imageUrl || p.image || '/macsunny-logo.png', qty: 1 }); setCartCount(getCart().reduce((n, item) => n + item.qty, 0)); setRecentlyAddedSku(p.sku); if (addedTimerRef.current) clearTimeout(addedTimerRef.current); addedTimerRef.current = setTimeout(() => setRecentlyAddedSku(''), 2200); showToast(`${p.name} added to cart`, 'success'); };
+  useEffect(() => () => { if (addedTimerRef.current) clearTimeout(addedTimerRef.current); }, []);
 
   return <main className="pcb-store">
     <section className="pcb-hero">
@@ -64,7 +88,7 @@ function Storefront() {
     <WhatsAppFab />
     <AIChatFab />
     <LocationFab />
-    {selectedProduct && <div className="product-detail-backdrop" role="dialog" aria-modal="true" aria-labelledby="product-detail-title" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedProduct(null); }}><article className="product-detail"><button className="product-detail__close" onClick={() => setSelectedProduct(null)} aria-label="Close product details"><X/></button><div className="product-detail__image relative"><Image fill sizes="(max-width: 640px) 100vw, 38vw" src={selectedProduct.imageUrl || selectedProduct.image || '/macsunny-logo.png'} alt={selectedProduct.imageAlt || selectedProduct.name} className="object-contain p-8"/></div><div className="product-detail__content"><small>{selectedProduct.category}</small><h2 id="product-detail-title">{selectedProduct.name}</h2><code>{selectedProduct.mpn || selectedProduct.sku}</code><p>{selectedProduct.description || 'Contact MacSunny Electronics for additional technical details.'}</p><div className="product-detail__meta"><span><b>Package</b>{selectedProduct.package || 'Not specified'}</span><span><b>Pins</b>{selectedProduct.pinCount || 'Not specified'}</span><span><b>Manufacturer</b>{selectedProduct.manufacturer || 'Not specified'}</span><span><b>Stock</b>{(selectedProduct.quantity ?? 0) > 0 ? `${selectedProduct.quantity} available` : 'Ask us'}</span></div>{selectedProduct.specifications?.length ? <><h3>Vital specifications</h3><dl>{selectedProduct.specifications.map((spec, index) => <div key={`${spec.label}-${index}`}><dt>{spec.label}</dt><dd>{spec.value}</dd></div>)}</dl></> : null}<div className="product-detail__actions"><strong>GH₵ {Number(selectedProduct.price).toFixed(2)}</strong>{selectedProduct.datasheetUrl && <a href={selectedProduct.datasheetUrl} target="_blank" rel="noreferrer">Datasheet <ExternalLink size={15}/></a>}<button onClick={() => add(selectedProduct)}><ShoppingCart size={18}/> Add to cart</button></div></div></article></div>}
+    {selectedProduct && <div className="product-detail-backdrop" role="dialog" aria-modal="true" aria-labelledby="product-detail-title" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedProduct(null); }}><article className="product-detail"><button className="product-detail__close" onClick={() => setSelectedProduct(null)} aria-label="Close product details"><X/></button><div className="product-detail__image relative"><Image fill sizes="(max-width: 640px) 100vw, 38vw" src={selectedProduct.imageUrl || selectedProduct.image || '/macsunny-logo.png'} alt={selectedProduct.imageAlt || selectedProduct.name} className="object-contain p-8"/></div><div className="product-detail__content"><small>{selectedProduct.category}</small><h2 id="product-detail-title">{selectedProduct.name}</h2><code>{selectedProduct.mpn || selectedProduct.sku}</code><p>{selectedProduct.description || 'Contact MacSunny Electronics for additional technical details.'}</p><div className="product-detail__meta"><span><b>Package</b>{selectedProduct.package || 'Not specified'}</span><span><b>Pins</b>{selectedProduct.pinCount || 'Not specified'}</span><span><b>Manufacturer</b>{selectedProduct.manufacturer || 'Not specified'}</span><span><b>Stock</b>{(selectedProduct.quantity ?? 0) > 0 ? `${selectedProduct.quantity} available` : 'Ask us'}</span></div>{selectedProduct.specifications?.length ? <><h3>Vital specifications</h3><dl>{selectedProduct.specifications.map((spec, index) => <div key={`${spec.label}-${index}`}><dt>{spec.label}</dt><dd>{spec.value}</dd></div>)}</dl></> : null}<div className="product-detail__actions"><strong>GH₵ {Number(selectedProduct.price).toFixed(2)}</strong>{selectedProduct.datasheetUrl && <a href={selectedProduct.datasheetUrl} target="_blank" rel="noreferrer">Datasheet <ExternalLink size={15}/></a>}<button onClick={() => add(selectedProduct)} className={recentlyAddedSku === selectedProduct.sku ? 'is-added' : ''}>{recentlyAddedSku === selectedProduct.sku ? <><Check size={18}/> Added to cart</> : <><ShoppingCart size={18}/> Add to cart</>}</button></div></div></article></div>}
   </main>;
 }
 
