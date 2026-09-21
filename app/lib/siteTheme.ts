@@ -44,10 +44,10 @@ export function sanitizeSiteTheme(
 export function containerWidth(container: ThemeContainer) {
   switch (container) {
     case 'narrow':
-      return '64rem';
+      return '1024px';
     case 'wide':
-      return '88rem';
+      return '1408px';
     default:
-      return '72rem';
+      return '1152px';
   }
 }
