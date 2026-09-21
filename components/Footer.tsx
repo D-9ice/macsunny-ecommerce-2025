@@ -4,7 +4,7 @@ import Image from 'next/image';
 
 export default function Footer() {
   return (
-    <footer className="mt-16 border-t border-emerald-800/60 bg-[#020b08] py-10 text-gray-200">
+    <footer id="site-footer" className="scroll-mt-24 border-t-4 border-amber-400 bg-[#020b08] py-10 text-gray-200 shadow-[0_-18px_60px_rgba(0,0,0,.7)]" data-footer-version="2026-09-21">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 text-center">
         <section aria-labelledby="footer-contact-title">
           <h2 id="footer-contact-title" className="text-sm font-bold uppercase tracking-[.18em] text-emerald-300">MacSunny Electronics</h2>
