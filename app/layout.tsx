@@ -70,7 +70,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <VisitTracker />
             <ComplianceGate />
             <Navbar />
-            <div className="mx-auto max-w-6xl px-4 py-6">{children}</div>
+            <div className="site-content-shell mx-auto px-4 py-6">{children}</div>
             <Footer />
             <ToastContainer />
           </ThemeProvider>
