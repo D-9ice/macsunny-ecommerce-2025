@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -18,17 +18,28 @@ const fallbackCategories = ['Integrated Circuits', 'Semiconductors', 'Resistors'
 function Storefront() {
   const router = useRouter(), params = useSearchParams();
   const q = params.get('q') || '', category = params.get('category') || '', page = Number(params.get('page') || 1);
-  const [draft, setDraft] = useState(q), [products, setProducts] = useState<Product[]>([]), [pagination, setPagination] = useState<Pagination>({ page: 1, pages: 1, total: 0, limit: 100 });
+  const [draft, setDraft] = useState(q), [products, setProducts] = useState<Product[]>([]), [pagination, setPagination] = useState<Pagination>({ page: 1, pages: 1, total: 0, limit: 50 });
   const [loading, setLoading] = useState(true), [error, setError] = useState(''), [retry, setRetry] = useState(0), [cartCount, setCartCount] = useState(0), [categories, setCategories] = useState<string[]>(fallbackCategories);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const queryString = useMemo(() => { const p = new URLSearchParams({ page: String(page), limit: '100' }); if (q) p.set('search', q); if (category) p.set('category', category); return p.toString(); }, [q, category, page]);
+  const [pageSize, setPageSize] = useState(50);
+  const catalogueRef = useRef<HTMLElement>(null);
+  const queryString = useMemo(() => { const p = new URLSearchParams({ page: String(page), limit: String(pageSize) }); if (q) p.set('search', q); if (category) p.set('category', category); return p.toString(); }, [q, category, page, pageSize]);
   useEffect(() => { setDraft(q); }, [q]);
+  useEffect(() => {
+    const updatePageSize = () => setPageSize(window.innerWidth <= 640 ? 24 : window.innerWidth >= 1600 ? 60 : 50);
+    updatePageSize();
+    window.addEventListener('resize', updatePageSize);
+    return () => window.removeEventListener('resize', updatePageSize);
+  }, []);
   useEffect(() => {
     const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 12000);
     setLoading(true); setError('');
     fetch(`/api/products?${queryString}`, { signal: controller.signal }).then(async r => { const d = await r.json(); if (!r.ok || !d.success) throw new Error(d.message || 'Catalogue request failed'); setProducts(d.data || d.products || []); setPagination(d.pagination); }).catch(e => setError(e.name === 'AbortError' ? 'The catalogue took too long to respond.' : e.message)).finally(() => { clearTimeout(timeout); setLoading(false); });
     return () => { clearTimeout(timeout); controller.abort(); };
   }, [queryString, retry]);
+  useEffect(() => {
+    if (!loading && (q || category)) requestAnimationFrame(() => catalogueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }, [loading, q, category, page]);
   useEffect(() => { fetch('/api/categories').then(r => r.json()).then(d => d.success && d.categories?.length && setCategories(d.categories)).catch(() => {}); }, []);
   useEffect(() => { const update = () => setCartCount(getCart().reduce((n, item) => n + item.qty, 0)); update(); window.addEventListener('storage', update); return () => window.removeEventListener('storage', update); }, []);
   const navigate = (updates: Record<string, string>) => { const next = new URLSearchParams(params.toString()); Object.entries(updates).forEach(([key, value]) => value ? next.set(key, value) : next.delete(key)); router.push(`/?${next.toString()}`); };
@@ -42,7 +53,7 @@ function Storefront() {
     </section>
     <section className="search-deck" aria-label="Product search"><form onSubmit={submit}><label className="sr-only" htmlFor="component-search">Search components</label><Search/><input id="component-search" value={draft} onChange={e => setDraft(e.target.value)} placeholder="Search by component, SKU or part number…"/><select aria-label="Product category" value={category} onChange={e => navigate({ category: e.target.value, page: '1' })}><option value="">All categories</option>{categories.map(c => <option key={c}>{c}</option>)}</select><button>Search</button></form><Link href="/cart"><ShoppingCart size={20}/> Cart <span>{cartCount}</span></Link></section>
     <section className="category-strip"><div><span>SHOP BY BOARD</span><h2>Find your component family</h2></div><div className="category-pills">{fallbackCategories.slice(0, 5).map((c, i) => <button key={c} onClick={() => navigate({ category: c, page: '1' })}><span>{[<Cpu key="a"/>,<Zap key="b"/>,<Box key="c"/>,<Box key="d"/>,<Cpu key="e"/>][i]}</span>{c}</button>)}</div></section>
-    <section id="catalogue" className="catalogue"><div className="section-heading"><div><span>{q || category ? 'FILTERED SIGNAL' : 'FRESH ON THE BOARD'}</span><h2>{q ? `Results for “${q}”` : category || 'Latest components'}</h2></div><p>{pagination.total} components</p></div>
+    <section ref={catalogueRef} id="catalogue" className="catalogue"><div className="section-heading"><div><span>{q || category ? 'FILTERED SIGNAL' : 'FRESH ON THE BOARD'}</span><h2>{q ? `Results for “${q}”` : category || 'Latest components'}</h2></div><p>{pagination.total} components</p></div>
       {loading ? <div className="product-grid" aria-label="Loading products">{Array.from({ length: 10 }).map((_, i) => <div className="product-card skeleton" key={i}><i/><b/><span/><button/></div>)}</div>
       : error ? <div className="catalogue-error"><Zap/><h3>Products could not be loaded right now.</h3><p>{error} Search and contact options remain available while we restore the catalogue.</p><button onClick={() => setRetry(v => v + 1)}>Retry catalogue</button></div>
       : !products.length ? <div className="catalogue-error"><Search/><h3>No matching components</h3><p>Try another part number, name, or category.</p><button onClick={() => router.push('/')}>Clear filters</button></div>

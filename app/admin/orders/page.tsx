@@ -1,6 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { RefreshCw } from 'lucide-react';
 import { Order, getAllOrders, updateOrderStatus } from '@/app/lib/orders';
 import MongoStatus from '@/app/components/MongoStatus';
 import DeliveryTracker from '@/app/components/DeliveryTracker';
@@ -8,23 +9,39 @@ import DeliveryTracker from '@/app/components/DeliveryTracker';
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [refreshError, setRefreshError] = useState('');
 
-  useEffect(() => {
-    loadOrders();
-  }, []);
-
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async (showActivity = false) => {
+    if (showActivity) setRefreshing(true);
     try {
-      const response = await fetch('/api/orders');
+      const response = await fetch('/api/orders', { cache: 'no-store' });
       const data = await response.json();
-      if (data.success) {
-        setOrders(data.orders);
-      }
+      if (!response.ok || !data.success) throw new Error(data.message || 'Orders could not be refreshed');
+      const nextOrders: Order[] = data.orders || [];
+      setOrders(nextOrders);
+      setSelectedOrder((current) => current ? nextOrders.find((order) => order.orderId === current.orderId) || null : null);
+      setLastRefreshed(new Date());
+      setRefreshError('');
     } catch (error) {
       console.error('Failed to load orders:', error);
       setOrders(getAllOrders());
+      setRefreshError(error instanceof Error ? error.message : 'Orders could not be refreshed');
+    } finally {
+      if (showActivity) setRefreshing(false);
     }
-  };
+  }, []);
+
+  useEffect(() => { void loadOrders(true); }, [loadOrders]);
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const refresh = () => { if (document.visibilityState === 'visible') void loadOrders(); };
+    const interval = window.setInterval(refresh, 30_000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { window.clearInterval(interval); document.removeEventListener('visibilitychange', refresh); };
+  }, [autoRefresh, loadOrders]);
 
   const handleStatusChange = async (orderId: string, newStatus: Order['status']) => {
     try {
@@ -101,6 +118,21 @@ export default function OrdersPage() {
       <h1 className="text-3xl font-bold">Orders Management</h1>
       <div className="flex gap-3">
         <button
+          onClick={() => void loadOrders(true)}
+          disabled={refreshing}
+          className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-60"
+        >
+          <RefreshCw className={refreshing ? 'animate-spin' : ''} size={18} />
+          {refreshing ? 'Refreshing…' : 'Refresh now'}
+        </button>
+        <button
+          onClick={() => setAutoRefresh((enabled) => !enabled)}
+          aria-pressed={autoRefresh}
+          className={`px-4 py-2 rounded-lg transition-colors ${autoRefresh ? 'bg-blue-700 hover:bg-blue-800' : 'bg-gray-800 hover:bg-gray-700'}`}
+        >
+          Auto-refresh: {autoRefresh ? 'On' : 'Off'}
+        </button>
+        <button
           onClick={handleClearCompletedCancelled}
           className="px-4 py-2 bg-red-700 hover:bg-red-800 rounded-lg transition-colors flex items-center gap-2"
           title="Delete all completed and cancelled orders"
@@ -117,6 +149,12 @@ export default function OrdersPage() {
           Back to Dashboard
         </Link>
       </div>
+    </div>
+
+    <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-gray-400" aria-live="polite">
+      <span>{autoRefresh ? 'Checking for new orders every 30 seconds.' : 'Automatic order refresh is paused.'}</span>
+      <span>{lastRefreshed ? `Last refreshed ${lastRefreshed.toLocaleTimeString()}` : 'Not refreshed yet'}</span>
+      {refreshError ? <span className="text-red-300">{refreshError}</span> : null}
     </div>
 
     {/* ✅ MongoDB Connection Status */}
