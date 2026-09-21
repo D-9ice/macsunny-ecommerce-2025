@@ -302,7 +302,7 @@ export function useMacSunnyLive() {
       const channel = peer.createDataChannel('oai-events');
       const audio = new Audio();
       audio.autoplay = true;
-      audio.playsInline = true;
+      audio.setAttribute('playsinline', '');
 
       peerRef.current = peer;
       channelRef.current = channel;
