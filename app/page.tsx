@@ -14,6 +14,13 @@ import LocationFab from './components/LocationFab';
 
 type Pagination = { page: number; pages: number; total: number; limit: number };
 const fallbackCategories = ['Integrated Circuits', 'Semiconductors', 'Resistors', 'Capacitors', 'Modules', 'Connectors'];
+const categoryCards = [
+  { label: 'Integrated Circuits', category: 'INTEGRATED CIRCUIT (IC)', icon: <Cpu /> },
+  { label: 'Power Transistors', category: 'POWER TRANSISTORS', icon: <Zap /> },
+  { label: 'Resistors', category: 'Resistors', icon: <Box /> },
+  { label: 'Capacitors', category: 'CAPACITOR', icon: <Box /> },
+  { label: 'Modules', category: 'MODULES', icon: <Cpu /> },
+];
 
 function Storefront() {
   const router = useRouter(), params = useSearchParams();
@@ -76,7 +83,7 @@ function Storefront() {
       <div className="pcb-hero__chip" aria-hidden="true"><span className="chip-pin p1"/><span className="chip-pin p2"/><span className="chip-pin p3"/><span className="chip-pin p4"/><div><Cpu size={76}/><b>MACSUNNY</b><small>COMPONENTS / GH</small></div></div>
     </section>
     <section className="search-deck" aria-label="Product search"><form onSubmit={submit}><label className="sr-only" htmlFor="component-search">Search components</label><Search/><input id="component-search" value={draft} onChange={e => setDraft(e.target.value)} placeholder="Search by component, SKU or part number…"/><select aria-label="Product category" value={category} onChange={e => navigate({ category: e.target.value, page: '1' })}><option value="">All categories</option>{categories.map(c => <option key={c}>{c}</option>)}</select><button>Search</button></form><Link href="/cart"><ShoppingCart size={20}/> Cart <span>{cartCount}</span></Link></section>
-    <section className="category-strip"><div><span>SHOP BY BOARD</span><h2>Find your component family</h2></div><div className="category-pills">{fallbackCategories.slice(0, 5).map((c, i) => <button key={c} onClick={() => navigate({ category: c, page: '1' })}><span>{[<Cpu key="a"/>,<Zap key="b"/>,<Box key="c"/>,<Box key="d"/>,<Cpu key="e"/>][i]}</span>{c}</button>)}</div></section>
+    <section className="category-strip"><div><span>SHOP BY BOARD</span><h2>Find your component family</h2></div><div className="category-pills">{categoryCards.map((card) => <button key={card.category} onClick={() => navigate({ category: card.category, page: '1' })} aria-label={`Show ${card.label}`}><span>{card.icon}</span>{card.label}</button>)}</div></section>
     <section ref={catalogueRef} id="catalogue" className="catalogue"><div className="section-heading"><div><span>{q || category ? 'FILTERED SIGNAL' : 'FRESH ON THE BOARD'}</span><h2>{q ? `Results for “${q}”` : category || 'Latest components'}</h2></div><p>{pagination.total} components</p></div>
       {loading ? <div className="product-grid" aria-label="Loading products">{Array.from({ length: 10 }).map((_, i) => <div className="product-card skeleton" key={i}><i/><b/><span/><button/></div>)}</div>
       : error ? <div className="catalogue-error"><Zap/><h3>Products could not be loaded right now.</h3><p>{error} Search and contact options remain available while we restore the catalogue.</p><button onClick={() => setRetry(v => v + 1)}>Retry catalogue</button></div>
