@@ -54,7 +54,7 @@ export default function Footer() {
               www.frontier-devconsults.com
             </a>{' '}
             • <a href="mailto:info@frontier-devconsults.com" className="underline">info@frontier-devconsults.com</a><br />
-            (+233) 0596106767 / 0249078976 / 0244809627
+            (+233) 0596106767 / 0249078976
           </p>
           <p className="mt-4 text-xs text-gray-500">All rights reserved © 2026 MacSunny Electronics.</p>
         </section>
