@@ -77,6 +77,17 @@ export default function FloatingActionLauncher() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    const handleVoiceAction = (event: Event) => {
+      const action = (event as CustomEvent<{ type?: string; target?: 'whatsapp' | 'location' }>).detail;
+      if (action?.type !== 'open_support' || !action.target) return;
+      setExpanded(false);
+      setActive(action.target);
+    };
+    window.addEventListener('macsunny:storefront-action', handleVoiceAction);
+    return () => window.removeEventListener('macsunny:storefront-action', handleVoiceAction);
+  }, []);
+
   const chooseAction = (action: Action) => {
     if (voiceActive && action !== 'ai') stopVoice();
     setExpanded(false);
