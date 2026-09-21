@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, Send, X } from 'lucide-react';
+import { Loader2, Mic, MicOff, PhoneOff, Radio, Send, X } from 'lucide-react';
+import { useMacSunnyLive } from '@/app/hooks/useMacSunnyLive';
 
 type Action = 'whatsapp' | 'ai' | 'location';
 type Message = { role: 'user' | 'assistant'; content: string };
@@ -36,7 +37,23 @@ export default function FloatingActionLauncher() {
   const rootRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const {
+    status,
+    statusLabel,
+    voiceActive,
+    muted,
+    needsGesture,
+    error: voiceError,
+    liveUserText,
+    liveAssistantText,
+    startVoice,
+    activateWelcome,
+    stopVoice,
+    toggleMute,
+  } = useMacSunnyLive();
+
   const closeAll = () => {
+    if (voiceActive) stopVoice();
     setExpanded(false);
     setActive(null);
   };
@@ -54,15 +71,27 @@ export default function FloatingActionLauncher() {
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [voiceActive]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const chooseAction = (action: Action) => {
+    if (voiceActive && action !== 'ai') stopVoice();
     setExpanded(false);
     setActive(action);
+  };
+
+  const activateVoiceWelcome = () => {
+    setExpanded(false);
+    setActive('ai');
+    void activateWelcome();
+  };
+
+  const closeAi = () => {
+    if (voiceActive) stopVoice();
+    setActive(null);
   };
 
   const sendMessage = async () => {
@@ -91,8 +120,30 @@ export default function FloatingActionLauncher() {
     }
   };
 
+  const statusDot = status === 'speaking'
+    ? 'bg-purple-500'
+    : status === 'listening'
+      ? 'bg-emerald-500'
+      : status === 'connecting'
+        ? 'bg-amber-500'
+        : status === 'error'
+          ? 'bg-red-500'
+          : 'bg-gray-400';
+
   return (
     <div ref={rootRef} className="fixed bottom-4 right-4 z-[70] sm:bottom-5 sm:right-5">
+      {needsGesture && active !== 'ai' && (
+        <button
+          type="button"
+          onClick={activateVoiceWelcome}
+          className="absolute bottom-[82px] right-0 flex w-max max-w-[calc(100vw-2rem)] items-center gap-2 rounded-full border border-purple-300 bg-white px-4 py-2 text-sm font-semibold text-purple-700 shadow-xl transition hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-400"
+          aria-label="Start MacSunny voice welcome"
+        >
+          <Mic className="h-4 w-4" />
+          Tap for voice welcome
+        </button>
+      )}
+
       {active === 'whatsapp' && (
         <section role="dialog" aria-label="WhatsApp support" className="absolute bottom-20 right-0 w-64 rounded-xl border-2 border-[#25D366] force-bg-white p-4 shadow-2xl animate-fade-in-up">
           <button onClick={() => setActive(null)} aria-label="Close WhatsApp panel" className="absolute right-2 top-2 rounded-md p-1 force-black hover:bg-gray-100"><X size={20} /></button>
@@ -112,33 +163,114 @@ export default function FloatingActionLauncher() {
       )}
 
       {active === 'ai' && (
-        <section role="dialog" aria-label="MacSunny AI Assistant" className="absolute bottom-20 right-0 flex max-h-[min(500px,calc(100vh-7rem))] w-[min(24rem,calc(100vw-2rem))] flex-col rounded-xl border-2 border-purple-400 force-bg-white shadow-2xl animate-fade-in-up">
+        <section role="dialog" aria-label="MacSunny AI Assistant" className="absolute bottom-20 right-0 flex max-h-[min(620px,calc(100vh-7rem))] w-[min(24rem,calc(100vw-2rem))] flex-col rounded-xl border-2 border-purple-400 force-bg-white shadow-2xl animate-fade-in-up">
           <header className="relative rounded-t-lg bg-gradient-to-r from-blue-600 to-purple-600 p-4 pr-12">
-            <button onClick={() => setActive(null)} aria-label="Close AI Assistant" className="absolute right-3 top-3 rounded-md p-1 text-white hover:bg-white/20"><X size={20} /></button>
+            <button onClick={closeAi} aria-label="Close AI Assistant" className="absolute right-3 top-3 rounded-md p-1 text-white hover:bg-white/20"><X size={20} /></button>
             <h3 className="flex items-center gap-2 font-bold text-white"><span className="text-xl">🤖</span>MacSunny AI Assistant</h3>
-            <p className="mt-1 text-xs text-white/80">Ask me about products, pricing, or anything!</p>
+            <p className="mt-1 text-xs text-white/80">Text assistant + GPT-Live voice</p>
           </header>
-          <div className="min-h-[190px] flex-1 space-y-3 overflow-y-auto p-4 sm:min-h-[200px] sm:max-h-[300px]">
+
+          <div className="border-b border-gray-200 bg-slate-50 p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="mr-auto flex items-center gap-2 text-xs font-semibold text-slate-700">
+                <span className={`h-2.5 w-2.5 rounded-full ${statusDot} ${status === 'speaking' || status === 'connecting' ? 'animate-pulse' : ''}`} />
+                {statusLabel}
+              </div>
+
+              {!voiceActive ? (
+                <button
+                  type="button"
+                  onClick={() => void startVoice(false)}
+                  disabled={status === 'connecting'}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-purple-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-purple-700 disabled:cursor-wait disabled:opacity-60"
+                >
+                  {status === 'connecting' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
+                  Start voice
+                </button>
+              ) : (
+                <>
+                  <button type="button" onClick={toggleMute} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100" aria-label={muted ? 'Unmute microphone' : 'Mute microphone'}>
+                    {muted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                    {muted ? 'Unmute' : 'Mute'}
+                  </button>
+                  <button type="button" onClick={stopVoice} className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700">
+                    <PhoneOff className="h-4 w-4" />
+                    End
+                  </button>
+                </>
+              )}
+            </div>
+
+            {!voiceActive && status !== 'connecting' && !voiceError && (
+              <p className="mt-2 text-[11px] text-slate-500">Your microphone starts only after you tap Start voice.</p>
+            )}
+            {voiceError && <p className="mt-2 text-xs text-red-600">{voiceError}</p>}
+
+            {(liveUserText || liveAssistantText) && (
+              <div className="mt-2 rounded-lg border border-slate-200 bg-white p-2 text-xs text-slate-600">
+                <div className="mb-1 flex items-center gap-1 font-semibold text-purple-700"><Radio className="h-3.5 w-3.5" />Live transcript</div>
+                {liveUserText && <p><strong>You:</strong> {liveUserText}</p>}
+                {liveAssistantText && <p className="mt-1"><strong>Assistant:</strong> {liveAssistantText}</p>}
+              </div>
+            )}
+          </div>
+
+          <div className="min-h-[170px] flex-1 space-y-3 overflow-y-auto p-4 sm:min-h-[190px] sm:max-h-[260px]">
             {messages.length === 0 ? (
-              <div className="mt-6 text-center text-gray-500"><p className="text-sm">Hi! How can I help you today?</p><p className="mt-2 text-xs">Ask me about products, technical specifications, pricing, or our location.</p></div>
+              <div className="mt-5 text-center text-gray-500">
+                <p className="text-sm">How can I help you today?</p>
+                <p className="mt-2 text-xs">Ask about products, specifications, pricing, alternatives, or our location.</p>
+              </div>
             ) : messages.map((message, index) => (
-              <div key={`${message.role}-${index}`} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${message.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-200 force-black'}`}>{message.content}</div></div>
+              <div key={`${message.role}-${index}`} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${message.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-200 force-black'}`}>{message.content}</div>
+              </div>
             ))}
             {isLoading && <div className="flex justify-start"><div className="flex items-center gap-2 rounded-lg bg-gray-200 px-3 py-2"><Loader2 className="h-4 w-4 animate-spin force-black" /><span className="text-sm force-black">Thinking...</span></div></div>}
             <div ref={messagesEndRef} />
           </div>
-          <div className="border-t border-gray-200 p-3"><div className="flex gap-2"><input value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage(); } }} placeholder="Type your question..." aria-label="Message MacSunny AI" className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none force-black" disabled={isLoading} /><button onClick={() => void sendMessage()} disabled={isLoading || !input.trim()} aria-label="Send message" className="rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2 text-white transition hover:from-blue-700 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-50"><Send className="h-4 w-4" /></button></div></div>
+
+          <div className="border-t border-gray-200 p-3">
+            <div className="flex gap-2">
+              <input
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    void sendMessage();
+                  }
+                }}
+                placeholder="Type your question..."
+                aria-label="Message MacSunny AI"
+                className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none force-black"
+                disabled={isLoading}
+              />
+              <button onClick={() => void sendMessage()} disabled={isLoading || !input.trim()} aria-label="Send message" className="rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2 text-white transition hover:from-blue-700 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-50"><Send className="h-4 w-4" /></button>
+            </div>
+          </div>
         </section>
       )}
 
       <div id="floating-actions" className="absolute bottom-0 right-0" aria-hidden={!expanded}>
         <button type="button" onClick={() => chooseAction('location')} tabIndex={expanded ? 0 : -1} aria-label="View Location" className={`absolute bottom-0 right-0 flex h-16 w-16 items-center justify-center rounded-full border-2 border-gray-200 bg-white shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 ${expanded ? '-translate-y-[216px] opacity-100' : 'pointer-events-none translate-y-0 scale-75 opacity-0'}`}><LocationIcon /></button>
-        <button type="button" onClick={() => chooseAction('ai')} tabIndex={expanded ? 0 : -1} aria-label="Chat with AI" className={`absolute bottom-0 right-0 flex h-16 w-16 flex-col items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-purple-600 p-2 text-white shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-purple-400 ${expanded ? '-translate-y-36 opacity-100' : 'pointer-events-none translate-y-0 scale-75 opacity-0'}`}><span className="text-[13px] font-black leading-none">Ask</span><span className="text-[11px] font-black leading-none tracking-tighter">macsunny</span><span className="text-[13px] font-black leading-none">AI</span></button>
+        <button type="button" onClick={() => chooseAction('ai')} tabIndex={expanded ? 0 : -1} aria-label="Chat with AI" className={`absolute bottom-0 right-0 flex h-16 w-16 flex-col items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-purple-600 p-2 text-white shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-purple-400 ${needsGesture ? 'ring-4 ring-amber-300/80 motion-safe:animate-pulse' : ''} ${expanded ? '-translate-y-36 opacity-100' : 'pointer-events-none translate-y-0 scale-75 opacity-0'}`}><span className="text-[13px] font-black leading-none">Ask</span><span className="text-[11px] font-black leading-none tracking-tighter">macsunny</span><span className="text-[13px] font-black leading-none">AI</span></button>
         <button type="button" onClick={() => chooseAction('whatsapp')} tabIndex={expanded ? 0 : -1} aria-label="Chat on WhatsApp" className={`absolute bottom-0 right-0 flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-green-400 ${expanded ? '-translate-y-[72px] opacity-100' : 'pointer-events-none translate-y-0 scale-75 opacity-0'}`}><WhatsAppIcon /></button>
       </div>
 
       <div className="absolute inset-0 -z-10 rounded-full bg-gradient-to-r from-green-400 via-purple-500 to-blue-400 opacity-60 blur-md motion-safe:animate-pulse" />
-      <button type="button" onClick={() => { setActive(null); setExpanded((current) => !current); }} aria-expanded={expanded} aria-controls="floating-actions" aria-label={expanded ? 'Close contact and location menu' : 'Open contact and location menu'} className="relative h-[68px] w-[68px] overflow-hidden rounded-full border-2 border-white/80 bg-slate-900 shadow-2xl transition-transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-emerald-300/70 active:scale-95">
+      <button
+        type="button"
+        onClick={() => {
+          if (voiceActive) stopVoice();
+          setActive(null);
+          setExpanded((current) => !current);
+        }}
+        aria-expanded={expanded}
+        aria-controls="floating-actions"
+        aria-label={expanded ? 'Close contact and location menu' : needsGesture ? 'Open menu; voice welcome is ready' : 'Open contact and location menu'}
+        className="relative h-[68px] w-[68px] overflow-hidden rounded-full border-2 border-white/80 bg-slate-900 shadow-2xl transition-transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-emerald-300/70 active:scale-95"
+      >
         <svg viewBox="0 0 68 68" className="h-full w-full" aria-hidden="true">
           <defs><linearGradient id="ai-segment" x1="0" x2="1"><stop stopColor="#2563eb" /><stop offset="1" stopColor="#9333ea" /></linearGradient></defs>
           <path d="M34 34 L34 1 A33 33 0 0 1 62.58 50.5 Z" fill="#25D366" stroke="white" strokeWidth="1.5" />
