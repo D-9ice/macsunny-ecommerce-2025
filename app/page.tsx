@@ -8,9 +8,7 @@ import { ArrowRight, Box, Check, ChevronLeft, ChevronRight, Cpu, ExternalLink, H
 import { Product } from './lib/products';
 import { addToCart, getCart } from './lib/cart';
 import { showToast } from './components/Toast';
-import WhatsAppFab from './components/WhatsAppFab';
-import AIChatFab from './components/AIChatFab';
-import LocationFab from './components/LocationFab';
+import FloatingActionLauncher from './components/FloatingActionLauncher';
 
 type Pagination = { page: number; pages: number; total: number; limit: number };
 const fallbackCategories = ['Integrated Circuits', 'Semiconductors', 'Resistors', 'Capacitors', 'Modules', 'Connectors'];
@@ -92,9 +90,7 @@ function Storefront() {
       {pagination.pages > 1 && <nav className="pagination" aria-label="Catalogue pages"><button disabled={page <= 1} onClick={() => navigate({ page: String(page - 1) })}><ChevronLeft/> Previous</button><span>Page {page} of {pagination.pages}</span><button disabled={page >= pagination.pages} onClick={() => navigate({ page: String(page + 1) })}>Next <ChevronRight/></button></nav>}
     </section>
     <section className="trust-grid"><div><ShieldCheck/><span><b>Quality checked</b><small>Components sourced with care</small></span></div><div><Truck/><span><b>Delivery across Ghana</b><small>Flexible delivery arrangements</small></span></div><div><Headphones/><span><b>Human technical support</b><small>Get help finding the right part</small></span></div></section>
-    <WhatsAppFab />
-    <AIChatFab />
-    <LocationFab />
+    <FloatingActionLauncher />
     {selectedProduct && <div className="product-detail-backdrop" role="dialog" aria-modal="true" aria-labelledby="product-detail-title" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedProduct(null); }}><article className="product-detail"><button className="product-detail__close" onClick={() => setSelectedProduct(null)} aria-label="Close product details"><X/></button><div className="product-detail__image relative"><Image fill sizes="(max-width: 640px) 100vw, 38vw" src={selectedProduct.imageUrl || selectedProduct.image || '/macsunny-logo.png'} alt={selectedProduct.imageAlt || selectedProduct.name} className="object-contain p-8"/></div><div className="product-detail__content"><small>{selectedProduct.category}</small><h2 id="product-detail-title">{selectedProduct.name}</h2><code>{selectedProduct.mpn || selectedProduct.sku}</code><p>{selectedProduct.description || 'Contact MacSunny Electronics for additional technical details.'}</p><div className="product-detail__meta"><span><b>Package</b>{selectedProduct.package || 'Not specified'}</span><span><b>Pins</b>{selectedProduct.pinCount || 'Not specified'}</span><span><b>Manufacturer</b>{selectedProduct.manufacturer || 'Not specified'}</span><span><b>Stock</b>{(selectedProduct.quantity ?? 0) > 0 ? `${selectedProduct.quantity} available` : 'Ask us'}</span></div>{selectedProduct.specifications?.length ? <><h3>Vital specifications</h3><dl>{selectedProduct.specifications.map((spec, index) => <div key={`${spec.label}-${index}`}><dt>{spec.label}</dt><dd>{spec.value}</dd></div>)}</dl></> : null}<div className="product-detail__actions"><strong>GH₵ {Number(selectedProduct.price).toFixed(2)}</strong>{selectedProduct.datasheetUrl && <a href={selectedProduct.datasheetUrl} target="_blank" rel="noreferrer">Datasheet <ExternalLink size={15}/></a>}<button onClick={() => add(selectedProduct)} className={recentlyAddedSku === selectedProduct.sku ? 'is-added' : ''}>{recentlyAddedSku === selectedProduct.sku ? <><Check size={18}/> Added to cart</> : <><ShoppingCart size={18}/> Add to cart</>}</button></div></div></article></div>}
   </main>;
 }
