@@ -93,7 +93,7 @@ CRITICAL INSTRUCTIONS:
             
             console.log(`🔍 AI Chat: Searching equivalents for "${searchTerm}"`);
             
-            const searchRes = await fetch(`http://localhost:3001/api/equivalents/search`, {
+            const searchRes = await fetch(new URL('/api/equivalents/search', req.url), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ 
