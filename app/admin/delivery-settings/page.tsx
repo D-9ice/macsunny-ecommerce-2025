@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import AdminWorkspace from '@/app/admin/components/AdminWorkspace';
 
 interface DeliveryZone {
   _id?: string;
@@ -159,44 +160,30 @@ export default function DeliverySettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white">Loading delivery settings...</div>
+      <div className="fixed inset-0 z-[110] grid h-[100dvh] place-items-center bg-slate-950 text-white">
+        <div>Loading delivery settings…</div>
       </div>
     );
   }
 
   if (!settings) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-white text-xl mb-4">Failed to load settings</div>
-          <button
-            onClick={() => router.push('/admin/dashboard')}
-            className="bg-green-700 hover:bg-green-800 px-6 py-2 rounded-lg text-white transition-colors"
-          >
-            ← Back to Dashboard
-          </button>
+      <AdminWorkspace title="Delivery Settings" subtitle="Manage delivery zones and pricing">
+        <div className="grid min-h-[60vh] place-items-center rounded-2xl border border-slate-800 bg-slate-950 p-8 text-center">
+          <div>
+            <div className="mb-4 text-xl text-white">Failed to load settings</div>
+            <button onClick={() => router.push('/admin/dashboard')} className="rounded-lg bg-violet-600 px-6 py-2 text-white hover:bg-violet-500">
+              Back to Dashboard
+            </button>
+          </div>
         </div>
-      </div>
+      </AdminWorkspace>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">🚚 Delivery Settings</h1>
-            <p className="text-gray-400 mt-1">Manage delivery zones and pricing</p>
-          </div>
-          <button
-            onClick={() => router.push('/admin/dashboard')}
-            className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition-colors"
-          >
-            ← Back to Dashboard
-          </button>
-        </div>
+    <AdminWorkspace title="Delivery Settings" subtitle="Manage delivery zones and pricing">
+      <div className="space-y-5">
 
         {/* Message */}
         {message && (
@@ -208,10 +195,10 @@ export default function DeliverySettingsPage() {
         )}
 
         {/* Free Delivery Threshold */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-6">
+        <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5">
           <h2 className="text-xl font-semibold mb-4">Free Delivery Threshold</h2>
           <div className="flex items-center gap-4">
-            <label className="text-gray-300">Orders above</label>
+            <label className="text-slate-300">Orders above</label>
             <input
               type="number"
               value={settings.freeDeliveryThreshold}
@@ -224,15 +211,15 @@ export default function DeliverySettingsPage() {
               className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 w-32 text-white"
               step="10"
             />
-            <label className="text-gray-300">GHS get FREE delivery</label>
+            <label className="text-slate-300">GHS get FREE delivery</label>
           </div>
-          <p className="text-sm text-gray-400 mt-2">
+          <p className="text-sm text-slate-400 mt-2">
             Customers whose cart total is above this amount will receive free delivery
           </p>
         </div>
 
         {/* Delivery Zones */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-6">
+        <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold">Delivery Zones</h2>
             <button
@@ -267,7 +254,7 @@ export default function DeliverySettingsPage() {
                     </button>
                     <div>
                       <h3 className="text-lg font-semibold">{zone.name}</h3>
-                      <p className="text-sm text-gray-400">
+                      <p className="text-sm text-slate-400">
                         Up to {zone.maxDistance} km from store
                       </p>
                     </div>
@@ -293,22 +280,22 @@ export default function DeliverySettingsPage() {
 
                 <div className="grid grid-cols-3 gap-4 mb-3">
                   <div>
-                    <p className="text-sm text-gray-400">Base Price</p>
+                    <p className="text-sm text-slate-400">Base Price</p>
                     <p className="text-lg font-semibold">GHS {zone.basePrice}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Price per KM</p>
+                    <p className="text-sm text-slate-400">Price per KM</p>
                     <p className="text-lg font-semibold">GHS {zone.pricePerKm}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Max Distance</p>
+                    <p className="text-sm text-slate-400">Max Distance</p>
                     <p className="text-lg font-semibold">{zone.maxDistance} km</p>
                   </div>
                 </div>
 
                 {zone.regions.length > 0 && (
                   <div>
-                    <p className="text-sm text-gray-400 mb-1">Regions:</p>
+                    <p className="text-sm text-slate-400 mb-1">Regions:</p>
                     <div className="flex flex-wrap gap-2">
                       {zone.regions.map((region, idx) => (
                         <span
@@ -327,11 +314,11 @@ export default function DeliverySettingsPage() {
         </div>
 
         {/* Save Button */}
-        <div className="flex justify-end gap-4">
+        <div className="sticky bottom-0 z-10 flex justify-end border-t border-slate-800 bg-slate-900/95 py-3 backdrop-blur">
           <button
             onClick={handleSaveSettings}
             disabled={saving}
-            className="bg-green-700 hover:bg-green-800 disabled:bg-gray-600 px-8 py-3 rounded-lg font-semibold transition-colors"
+            className="rounded-lg bg-emerald-700 px-8 py-3 font-semibold hover:bg-emerald-600 disabled:bg-slate-700"
           >
             {saving ? 'Saving...' : '💾 Save All Changes'}
           </button>
@@ -433,7 +420,7 @@ export default function DeliverySettingsPage() {
                   placeholder="e.g., Accra, Tema, Madina"
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white"
                 />
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-slate-400 mt-1">
                   Optional: Specific regions this zone applies to
                 </p>
               </div>
@@ -474,6 +461,6 @@ export default function DeliverySettingsPage() {
           </div>
         </div>
       )}
-    </div>
+    </AdminWorkspace>
   );
 }
