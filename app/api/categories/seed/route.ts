@@ -13,13 +13,20 @@ const defaultCategories = [
   'Transistors',
 ];
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     await connectDB();
-    
+    const requested = new URL(request.url).searchParams.get('category');
+    const requestedCategory = requested
+      ? defaultCategories.find((category) => category.toLowerCase() === requested.trim().toLowerCase())
+      : null;
+    if (requested && !requestedCategory) {
+      return NextResponse.json({ success: false, message: 'Unsupported seed category' }, { status: 400 });
+    }
+    const categoriesToSeed = requestedCategory ? [requestedCategory] : defaultCategories;
     const results = [];
     
-    for (const categoryName of defaultCategories) {
+    for (const categoryName of categoriesToSeed) {
       const existing = await CategoryModel.findOne({ name: categoryName });
       if (!existing) {
         await CategoryModel.create({ name: categoryName });
