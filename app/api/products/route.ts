@@ -33,7 +33,12 @@ export async function GET(request: Request) {
       const pattern = new RegExp(safeRegex(search), 'i');
       query.$or = [{ name: pattern }, { category: pattern }, { sku: pattern }, { description: pattern }];
     }
-    if (category) {\n      const normalizedCategory = category.toLowerCase();\n      query.category = normalizedCategory === 'transistors' || normalizedCategory === 'transistor'\n        ? /transistors?/i\n        : new RegExp(`^${safeRegex(category)}$`, 'i');\n    }
+    if (category) {
+      const normalizedCategory = category.toLowerCase();
+      query.category = normalizedCategory === 'transistors' || normalizedCategory === 'transistor'
+        ? /transistors?/i
+        : new RegExp(`^${safeRegex(category)}$`, 'i');
+    }
     const sort: Record<string, 1 | -1> = sortName === 'price-asc' ? { price: 1 } : sortName === 'price-desc' ? { price: -1 } : { createdAt: -1 };
     const [raw, total] = await Promise.all([
       ProductModel.find(query).select(projection).sort(sort).skip((page - 1) * limit).limit(limit).lean(),
