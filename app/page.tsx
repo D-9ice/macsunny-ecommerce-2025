@@ -32,7 +32,7 @@ function MosfetSymbol() {
 
 const categoryCards = [
   { label: 'Integrated Circuits', category: 'INTEGRATED CIRCUIT (IC)', icon: <Cpu /> },
-  { label: 'Transistors', category: 'POWER TRANSISTORS', icon: <TransistorSymbol /> },
+  { label: 'Transistors', category: 'Transistors', icon: <TransistorSymbol /> },
   { label: 'MOSFETs', category: 'MOSFETs', icon: <MosfetSymbol /> },
   { label: 'Resistors', category: 'Resistors', icon: <ResistorSymbol /> },
   { label: 'Capacitors', category: 'CAPACITOR', icon: <CapacitorSymbol /> },
