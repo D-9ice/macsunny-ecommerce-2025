@@ -2,10 +2,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
 import MongoStatus from '../../components/MongoStatus'; // adjust path if needed
 import ThemeCustomizer from './ThemeCustomizer';
 import ThemeToggle from '../../../components/ThemeToggle';
+import AdminWorkspace from '@/app/admin/components/AdminWorkspace';
 
 type ThemeMode = 'dark' | 'light' | 'premium';
 
@@ -140,14 +140,8 @@ export default function SettingsPage(): React.JSX.Element {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold">System Settings</h1>
-          <Link href="/admin/dashboard" className="px-4 py-2 bg-gray-800 rounded-lg hover:bg-gray-700">
-            Back to Dashboard
-          </Link>
-        </div>
+    <AdminWorkspace title="System Settings" subtitle="Theme, appearance, system tools, and live status">
+      <div className="space-y-6">
 
         {/* Theme Toggle - Positioned for easy access */}
         <div className="mb-6">
@@ -157,16 +151,16 @@ export default function SettingsPage(): React.JSX.Element {
         <MongoStatus />
 
         <div className="mt-6 rounded-lg bg-slate-900/60 border border-slate-700 p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div><div className="text-sm text-gray-300">Products</div><div className="text-2xl font-semibold">{stats.products}</div></div>
-          <div><div className="text-sm text-gray-300">Orders</div><div className="text-2xl font-semibold">{stats.orders}</div></div>
-          <div><div className="text-sm text-gray-300">Categories</div><div className="text-2xl font-semibold">{stats.categories}</div></div>
-          <div><div className="text-sm text-gray-300">Environment</div><div className="text-xl">{stats.environment}</div></div>
-          <div><div className="text-sm text-gray-300">Memory Usage</div><div className="text-xl">{prettyBytes(stats.memBytes)}</div></div>
-          <div><div className="text-sm text-gray-300">DB Uptime</div><div className="text-xl">{prettySeconds(stats.dbUptimeSec)}</div></div>
+          <div><div className="text-sm text-slate-300">Products</div><div className="text-2xl font-semibold">{stats.products}</div></div>
+          <div><div className="text-sm text-slate-300">Orders</div><div className="text-2xl font-semibold">{stats.orders}</div></div>
+          <div><div className="text-sm text-slate-300">Categories</div><div className="text-2xl font-semibold">{stats.categories}</div></div>
+          <div><div className="text-sm text-slate-300">Environment</div><div className="text-xl">{stats.environment}</div></div>
+          <div><div className="text-sm text-slate-300">Memory Usage</div><div className="text-xl">{prettyBytes(stats.memBytes)}</div></div>
+          <div><div className="text-sm text-slate-300">DB Uptime</div><div className="text-xl">{prettySeconds(stats.dbUptimeSec)}</div></div>
         </div>
 
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <section className="col-span-1 bg-slate-900 border border-slate-700 rounded-xl p-6">
+          <section className="col-span-1 rounded-2xl border border-slate-800 bg-slate-950 p-6">
             <h2 className="text-xl font-semibold mb-4">Theme & Appearance</h2>
             <div className="mb-4">
               <label className="block text-sm mb-2">Mode</label>
@@ -199,7 +193,7 @@ export default function SettingsPage(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="col-span-1 bg-slate-900 border border-slate-700 rounded-xl p-6">
+          <section className="col-span-1 rounded-2xl border border-slate-800 bg-slate-950 p-6">
             <h2 className="text-xl font-semibold mb-4">Live Preview</h2>
             <div className="rounded p-4" style={{background:theme.mode==='light'?'#f7fafc':theme.mode==='premium'?'linear-gradient(180deg,#0f172a,#00121f)':'#0b1220',color:theme.mode==='light'?'#111827':'#e6eef8',borderRadius:theme.rounded?12:4,transform:`scale(${theme.fontScale})`}}>
               <div className="flex items-center gap-3">
@@ -220,7 +214,7 @@ export default function SettingsPage(): React.JSX.Element {
           </section>
 
                     {/* 🧰 System Tools + Live MongoDB Status */}
-          <section className="col-span-1 bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-lg shadow-black/30">
+          <section className="col-span-1 rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-lg shadow-black/30">
             <h2 className="text-xl font-semibold mb-4">System Tools & Status</h2>
             <div className="space-y-4">
               <button
@@ -244,11 +238,11 @@ export default function SettingsPage(): React.JSX.Element {
           </section>
 
           {/* 🎨 Advanced Theme Customizer */}
-          <section className="col-span-1 lg:col-span-3 mt-8 bg-gray-900/60 border border-gray-800 rounded-xl p-8 text-white shadow-lg shadow-black/40">
+          <section className="col-span-1 lg:col-span-3 mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-8 text-white shadow-lg shadow-black/40">
             <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
               🎨 Theme & Appearance
             </h2>
-            <p className="text-gray-400 mb-6">
+            <p className="text-slate-400 mb-6">
               Adjust the look and feel of the MacSunny system in real-time.
               Changes apply instantly across all pages.
             </p>
@@ -285,7 +279,7 @@ export default function SettingsPage(): React.JSX.Element {
                   }
                   className="w-20 h-10 rounded-lg border border-gray-700 cursor-pointer"
                 />
-                <p className="text-sm text-gray-400 mt-1">{theme.accent}</p>
+                <p className="text-sm text-slate-400 mt-1">{theme.accent}</p>
               </div>
 
               {/* Font Scale */}
@@ -302,7 +296,7 @@ export default function SettingsPage(): React.JSX.Element {
                   }
                   className="w-full accent-green-600"
                 />
-                <p className="text-sm text-gray-400 mt-1">
+                <p className="text-sm text-slate-400 mt-1">
                   {theme.fontScale.toFixed(2)}x
                 </p>
               </div>
@@ -362,7 +356,7 @@ export default function SettingsPage(): React.JSX.Element {
                     View Details
                   </button>
                 </div>
-                <p className="text-gray-300 text-sm">
+                <p className="text-slate-300 text-sm">
                   Accent and mode changes are applied globally.
                 </p>
               </div>
@@ -391,7 +385,6 @@ export default function SettingsPage(): React.JSX.Element {
 
         </div>
       </div>
-    </main>
+    </AdminWorkspace>
   );
 }
-
