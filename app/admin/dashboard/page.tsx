@@ -1,30 +1,26 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import VisitCounter from '@/app/components/VisitCounter';
+import AdminWorkspace from '@/app/admin/components/AdminWorkspace';
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check authentication on client side
     const checkAuth = async () => {
       try {
         const response = await fetch('/api/admin/check-auth');
         const data = await response.json();
-        
-        if (!data.authenticated) {
-          router.push('/admin/login');
-        } else {
-          setIsLoading(false);
-        }
-      } catch (error) {
+        if (!data.authenticated) router.push('/admin/login');
+        else setIsLoading(false);
+      } catch {
         router.push('/admin/login');
       }
     };
-
     checkAuth();
   }, [router]);
 
@@ -39,93 +35,65 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="fixed inset-0 z-[110] grid h-[100dvh] place-items-center bg-slate-950 text-white">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-700 mx-auto"></div>
-          <p className="mt-4 text-gray-400">Loading...</p>
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-violet-400" />
+          <p className="mt-4 text-slate-400">Loading admin workspace…</p>
         </div>
       </div>
     );
   }
 
+  const actions = (
+    <>
+      <Link href="/admin/password" className="rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 sm:text-sm">
+        Change Password
+      </Link>
+      <button onClick={handleLogout} className="rounded-lg bg-red-700 px-3 py-2 text-xs font-semibold hover:bg-red-800 sm:text-sm">
+        Logout
+      </button>
+    </>
+  );
+
   return (
-    <main className="min-h-screen bg-black text-white p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <div className="flex gap-3">
-            <Link
-              href="/admin/password"
-              className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              Change Password
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-red-700 hover:bg-red-800 rounded-lg transition-colors"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <div className="bg-gray-900 rounded-xl p-6">
-            <h3 className="text-lg font-semibold mb-2">Inventory</h3>
-            <p className="text-gray-400 mb-4">Manage your product catalog</p>
-            <Link
-              href="/admin/inventory"
-              className="inline-block px-4 py-2 bg-green-700 hover:bg-green-800 rounded-lg transition-colors"
-            >
-              Manage Inventory
-            </Link>
-          </div>
-
-          <div className="bg-gray-900 rounded-xl p-6">
-            <h3 className="text-lg font-semibold mb-2">Orders</h3>
-            <p className="text-gray-400 mb-4">View and manage orders</p>
-            <Link
-              href="/admin/orders"
-              className="inline-block px-4 py-2 bg-green-700 hover:bg-green-800 rounded-lg transition-colors"
-            >
-              View Orders
-            </Link>
-          </div>
-
-          <div className="bg-gray-900 rounded-xl p-6">
-            <h3 className="text-lg font-semibold mb-2">🚚 Delivery Settings</h3>
-            <p className="text-gray-400 mb-4">Manage delivery zones & pricing</p>
-            <Link
-              href="/admin/delivery-settings"
-              className="inline-block px-4 py-2 bg-green-700 hover:bg-green-800 rounded-lg transition-colors"
-            >
-              Configure Delivery
-            </Link>
-          </div>
-
-          <div className="bg-gray-900 rounded-xl p-6">
-            <h3 className="text-lg font-semibold mb-2">Settings</h3>
-            <p className="text-gray-400 mb-4">Configure your store</p>
-            <Link
-              href="/admin/settings"
-              className="inline-block px-4 py-2 bg-green-700 hover:bg-green-800 rounded-lg transition-colors"
-            >
-              Settings
-            </Link>
-          </div>
-        </div>
-
-        {/* Visit Counter Analytics */}
-        <div className="mt-6">
-          <VisitCounter />
-        </div>
-
-        <div className="mt-8">
-          <Link href="/" className="text-green-600 hover:text-green-500">
-            ← Back to Store
+    <AdminWorkspace title="Admin Dashboard" subtitle="MacSunny management control centre" actions={actions}>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="rounded-2xl border border-slate-800 bg-slate-950 p-5">
+          <h2 className="text-lg font-bold text-amber-100">Inventory</h2>
+          <p className="mt-2 text-sm text-slate-400">Manage the complete product catalogue.</p>
+          <Link href="/admin/inventory" className="mt-5 inline-flex rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold hover:bg-violet-500">
+            Open Super Smart Manager
           </Link>
-        </div>
+        </section>
+
+        <section className="rounded-2xl border border-slate-800 bg-slate-950 p-5">
+          <h2 className="text-lg font-bold text-amber-100">Orders</h2>
+          <p className="mt-2 text-sm text-slate-400">View, refresh, and manage customer orders.</p>
+          <Link href="/admin/orders" className="mt-5 inline-flex rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold hover:bg-violet-500">
+            View Orders
+          </Link>
+        </section>
+
+        <section className="rounded-2xl border border-slate-800 bg-slate-950 p-5">
+          <h2 className="text-lg font-bold text-amber-100">Delivery Settings</h2>
+          <p className="mt-2 text-sm text-slate-400">Manage delivery zones, distance, and pricing.</p>
+          <Link href="/admin/delivery-settings" className="mt-5 inline-flex rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold hover:bg-violet-500">
+            Configure Delivery
+          </Link>
+        </section>
+
+        <section className="rounded-2xl border border-slate-800 bg-slate-950 p-5">
+          <h2 className="text-lg font-bold text-amber-100">System Settings</h2>
+          <p className="mt-2 text-sm text-slate-400">Theme, appearance, system tools, and status.</p>
+          <Link href="/admin/settings" className="mt-5 inline-flex rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold hover:bg-violet-500">
+            Open Settings
+          </Link>
+        </section>
       </div>
-    </main>
+
+      <div className="mt-5">
+        <VisitCounter />
+      </div>
+    </AdminWorkspace>
   );
 }
