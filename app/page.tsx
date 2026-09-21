@@ -12,6 +12,12 @@ import { showToast } from './components/Toast';
 import FloatingActionLauncher from './components/FloatingActionLauncher';
 
 type Pagination = { page: number; pages: number; total: number; limit: number };
+type StorefrontVoiceAction =
+  | { type: 'show_product'; query: string; sku: string }
+  | { type: 'filter_category'; category: string }
+  | { type: 'scroll_catalogue' }
+  | { type: 'open_cart' }
+  | { type: 'open_support'; target: 'whatsapp' | 'location' };
 const fallbackCategories = ['Integrated Circuits', 'Semiconductors', 'Transistors', 'MOSFETs', 'Resistors', 'Capacitors', 'Modules', 'Connectors'];
 
 function ResistorSymbol() {
@@ -65,9 +71,49 @@ function Storefront() {
   const [recentlyAddedSku, setRecentlyAddedSku] = useState('');
   const [pageSize, setPageSize] = useState(50);
   const catalogueRef = useRef<HTMLElement>(null);
+  const pendingVoiceSkuRef = useRef('');
   const addedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const queryString = useMemo(() => { const p = new URLSearchParams({ page: String(page), limit: String(pageSize) }); if (q) p.set('search', q); if (category) p.set('category', category); return p.toString(); }, [q, category, page, pageSize]);
   useEffect(() => { setDraft(q); }, [q]);
+  useEffect(() => {
+    const handleVoiceAction = (event: Event) => {
+      const action = (event as CustomEvent<StorefrontVoiceAction>).detail;
+      if (!action) return;
+
+      if (action.type === 'open_cart') {
+        router.push('/cart');
+        return;
+      }
+
+      if (action.type === 'scroll_catalogue') {
+        catalogueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
+      const next = new URLSearchParams(window.location.search);
+      if (action.type === 'show_product') {
+        pendingVoiceSkuRef.current = action.sku;
+        setDraft(action.query);
+        next.set('q', action.query);
+        next.delete('category');
+        next.set('page', '1');
+        router.push('/?' + next.toString());
+        return;
+      }
+
+      if (action.type === 'filter_category') {
+        pendingVoiceSkuRef.current = '';
+        setDraft('');
+        next.delete('q');
+        next.set('category', action.category);
+        next.set('page', '1');
+        router.push('/?' + next.toString());
+      }
+    };
+
+    window.addEventListener('macsunny:storefront-action', handleVoiceAction);
+    return () => window.removeEventListener('macsunny:storefront-action', handleVoiceAction);
+  }, [router]);
   useEffect(() => {
     const updatePageSize = () => setPageSize(window.innerWidth <= 640 ? 24 : window.innerWidth >= 1600 ? 60 : 50);
     updatePageSize();
@@ -104,6 +150,17 @@ function Storefront() {
   useEffect(() => {
     if (!loading && (q || category)) requestAnimationFrame(() => catalogueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }, [loading, q, category, page]);
+  useEffect(() => {
+    if (loading || !pendingVoiceSkuRef.current) return;
+    const targetSku = pendingVoiceSkuRef.current.toLowerCase();
+    const match = products.find((product) => String(product.sku || '').toLowerCase() === targetSku);
+    if (!match) return;
+    pendingVoiceSkuRef.current = '';
+    requestAnimationFrame(() => {
+      catalogueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setSelectedProduct(match);
+    });
+  }, [loading, products]);
   useEffect(() => { fetch('/api/categories').then(r => r.json()).then(d => d.success && d.categories?.length && setCategories(d.categories)).catch(() => {}); }, []);
   useEffect(() => { const update = () => setCartCount(getCart().reduce((n, item) => n + item.qty, 0)); update(); window.addEventListener('storage', update); return () => window.removeEventListener('storage', update); }, []);
   const navigate = (updates: Record<string, string>) => { const next = new URLSearchParams(params.toString()); Object.entries(updates).forEach(([key, value]) => value ? next.set(key, value) : next.delete(key)); router.push(`/?${next.toString()}`); };
