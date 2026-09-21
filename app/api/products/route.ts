@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     const query: Record<string, unknown> = {};
     if (search) {
       const pattern = new RegExp(safeRegex(search), 'i');
-      query.$or = [{ name: pattern }, { category: pattern }, { sku: pattern }, { description: pattern }];
+      query.$or = [{ name: pattern }, { category: pattern }, { sku: pattern }, { mpn: pattern }, { description: pattern }];
     }
     if (category) {
       const normalizedCategory = category.toLowerCase();
