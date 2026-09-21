@@ -157,3 +157,17 @@ const ComplianceAuditSchema = new mongoose.Schema({
 
 export const ComplianceStateModel = mongoose.models.ComplianceState || mongoose.model('ComplianceState', ComplianceStateSchema);
 export const ComplianceAuditModel = mongoose.models.ComplianceAudit || mongoose.model('ComplianceAudit', ComplianceAuditSchema);
+
+const SiteSettingsSchema = new mongoose.Schema({
+  singletonKey: { type: String, unique: true, default: 'site' },
+  theme: {
+    mode: { type: String, enum: ['light', 'dark', 'premium'], default: 'premium' },
+    accent: { type: String, default: '#48c982' },
+    fontScale: { type: Number, default: 1 },
+    container: { type: String, enum: ['narrow', 'normal', 'wide'], default: 'normal' },
+    rounded: { type: Boolean, default: true },
+  },
+}, { timestamps: true });
+
+export const SiteSettingsModel =
+  mongoose.models.SiteSettings || mongoose.model('SiteSettings', SiteSettingsSchema);
