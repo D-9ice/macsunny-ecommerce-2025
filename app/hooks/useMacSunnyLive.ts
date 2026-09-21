@@ -6,6 +6,12 @@ export type LiveVoiceStatus = 'idle' | 'connecting' | 'ready' | 'listening' | 's
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
 type SessionMode = 'welcome' | 'voice';
+type StorefrontAction =
+  | { type: 'show_product'; query: string; sku: string }
+  | { type: 'filter_category'; category: string }
+  | { type: 'scroll_catalogue' }
+  | { type: 'open_cart' }
+  | { type: 'open_support'; target: 'whatsapp' | 'location' };
 
 const GREETING_KEY = 'macsunny-live-greeted-v1';
 const GREETING = 'Welcome to MacSunny Electronics, How may we help you?';
@@ -139,6 +145,85 @@ export function useMacSunnyLive() {
     if (!sent) greetEventRef.current = '';
   };
 
+  const dispatchStorefrontAction = (action: StorefrontAction) => {
+    window.dispatchEvent(new CustomEvent('macsunny:storefront-action', { detail: action }));
+  };
+
+  const resolveStorefrontAction = async (text: string): Promise<{ action?: StorefrontAction; guidance?: string }> => {
+    const lower = text.toLowerCase();
+    const hasUiIntent = /\b(show|find|open|take me|go to|browse|display|bring up|search|see|view)\b/i.test(text);
+
+    if (/\b(cart|basket)\b/i.test(text) && hasUiIntent) {
+      return { action: { type: 'open_cart' }, guidance: 'The storefront cart is opening now.' };
+    }
+
+    if (/\b(location|address|where are you|find you|find us|directions)\b/i.test(text)) {
+      return { action: { type: 'open_support', target: 'location' }, guidance: 'I am opening the MacSunny location panel.' };
+    }
+
+    if (/\b(whatsapp|seller|human support|contact seller|chat with seller)\b/i.test(text)) {
+      return { action: { type: 'open_support', target: 'whatsapp' }, guidance: 'I am opening the WhatsApp seller contact panel.' };
+    }
+
+    const categoryAliases: Array<[string, string[]]> = [
+      ['Transistors', ['transistor', 'transistors', 'power transistor', 'power transistors']],
+      ['MOSFETs', ['mosfet', 'mosfets']],
+      ['Resistors', ['resistor', 'resistors']],
+      ['CAPACITOR', ['capacitor', 'capacitors']],
+      ['INTEGRATED CIRCUIT (IC)', ['integrated circuit', 'integrated circuits', ' ic ', ' ics ']],
+      ['MODULES', ['module', 'modules']],
+    ];
+
+    if (hasUiIntent) {
+      const padded = ' ' + lower + ' ';
+      for (const [category, aliases] of categoryAliases) {
+        if (aliases.some((alias) => padded.includes(alias.startsWith(' ') ? alias : ' ' + alias + ' '))) {
+          return { action: { type: 'filter_category', category }, guidance: 'I am showing the ' + category + ' inventory now.' };
+        }
+      }
+    }
+
+    const stop = new Set([
+      'SHOW','FIND','OPEN','SEARCH','DISPLAY','BRING','PRODUCT','COMPONENT','PART','NUMBER','PLEASE','THE',
+      'HAVE','PRICE','COST','STOCK','AVAILABLE','WHAT','TELL','ABOUT','LOOK','GIVE','NEED','WANT','VIEW',
+    ]);
+    const candidates = Array.from(new Set(
+      text.toUpperCase()
+        .replace(/[^A-Z0-9.+/_-]+/g, ' ')
+        .split(/\s+/)
+        .map((token) => token.trim())
+        .filter((token) => token.length >= 3 && !stop.has(token) && /[A-Z]/.test(token) && /\d/.test(token))
+    )).slice(0, 6);
+
+    for (const candidate of candidates) {
+      try {
+        const response = await fetch('/api/products?search=' + encodeURIComponent(candidate) + '&page=1&limit=12', { cache: 'no-store' });
+        const data = await response.json();
+        const products = Array.isArray(data?.data) ? data.data : Array.isArray(data?.products) ? data.products : [];
+        if (!response.ok || !products.length) continue;
+        const exact = products.find((product: any) =>
+          String(product?.sku || '').toUpperCase() === candidate ||
+          String(product?.mpn || '').toUpperCase() === candidate
+        );
+        const product = exact || (hasUiIntent && products.length === 1 ? products[0] : null);
+        if (product?.sku) {
+          return {
+            action: { type: 'show_product', query: String(product.sku), sku: String(product.sku) },
+            guidance: 'I found ' + String(product.name || product.sku) + ' and I am showing the product now.',
+          };
+        }
+      } catch {
+        // Grounded chat still answers even if UI lookup is temporarily unavailable.
+      }
+    }
+
+    if (/\b(products|components|inventory|catalogue|catalog|storefront)\b/i.test(text) && hasUiIntent) {
+      return { action: { type: 'scroll_catalogue' }, guidance: 'I am taking you to the component catalogue.' };
+    }
+
+    return {};
+  };
+
   const handleDelegation = async (delegationId: string) => {
     await new Promise((resolve) => setTimeout(resolve, 450));
 
@@ -161,6 +246,16 @@ export function useMacSunnyLive() {
       return;
     }
 
+    const latestUserText = String(messages[messages.length - 1]?.content || '');
+    let guideNote = '';
+    try {
+      const guide = await resolveStorefrontAction(latestUserText);
+      if (guide.action) dispatchStorefrontAction(guide.action);
+      guideNote = guide.guidance || '';
+    } catch {
+      guideNote = '';
+    }
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -171,20 +266,20 @@ export function useMacSunnyLive() {
       const result = response.ok
         ? String(data.message || 'No verified result was returned.')
         : String(data.message || 'The storefront backend could not verify that information.');
+      const combined = guideNote ? result + ' ' + guideNote : result;
 
       send({
         type: 'session.commentary.append',
         event_id: eventId(),
         delegation_id: delegationId,
-        content: result.slice(0, 1800),
+        content: combined.slice(0, 1800),
       });
     } catch {
       send({
         type: 'session.commentary.append',
         event_id: eventId(),
         delegation_id: delegationId,
-        content:
-          'The storefront backend is temporarily unavailable. Do not guess. Ask the visitor to use the WhatsApp support option for verification.',
+        content: guideNote || 'The storefront backend is temporarily unavailable. Do not guess. Ask the visitor to use the WhatsApp support option for verification.',
       });
     }
   };
