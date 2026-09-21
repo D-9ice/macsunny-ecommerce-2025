@@ -438,3 +438,279 @@ p, span, div {
 .animate-light-rays {
   animation: light-rays 2s ease-in-out infinite;
 }
+
+
+/* ===========================
+   Canonical storefront theme bridge
+   Current PCB design remains the premium/default fallback.
+   =========================== */
+:root {
+  --ms-container-width: 1152px;
+  --ms-radius-card: 1rem;
+  --ms-radius-panel: 1.5rem;
+  --ms-radius-control: .55rem;
+  --ms-radius-pill: 999px;
+
+  --storefront-bg-base: #032b1e;
+  --storefront-bg-image: linear-gradient(180deg,#02140da8,#031a12d1 48%,#010b08e8),url('/pcb-storefront-bg.webp');
+  --storefront-vignette: radial-gradient(circle at 50% 12%,transparent 0 24%,#00140d4d 58%,#000b078f 100%),linear-gradient(90deg,#00110bc7 0,transparent 18%,transparent 82%,#00110bc7 100%);
+  --storefront-text: #eafff5;
+  --storefront-muted: #bdd5ca;
+  --storefront-panel: #061b15ed;
+  --storefront-panel-solid: #061b15f2;
+  --storefront-panel-soft: #0a251bed;
+  --storefront-panel-deep: #04140fef;
+  --storefront-detail: #071b14;
+  --storefront-detail-sub: #0c2b20;
+  --storefront-border: #4e8d67;
+  --storefront-border-soft: #3d7656;
+  --storefront-header: #061d16;
+  --storefront-header-muted: #a9c8b9;
+  --storefront-footer: #020b08;
+  --storefront-input: #0a2a20;
+  --storefront-image-a: #edf8f3;
+  --storefront-image-b: #dbeae3;
+  --storefront-hero: radial-gradient(circle at 78% 45%,#0ea5e92e,transparent 24%),linear-gradient(120deg,#04261de8,#020d0ae8);
+  --storefront-accent-text: #06130f;
+}
+
+[data-theme='dark'] {
+  --storefront-bg-base: #06090f;
+  --storefront-bg-image: linear-gradient(180deg,#05070bdc,#080d15e8 48%,#04060aef),url('/pcb-storefront-bg.webp');
+  --storefront-vignette: radial-gradient(circle at 50% 12%,transparent 0 20%,#02061766 58%,#000000bf 100%),linear-gradient(90deg,#020617d9 0,transparent 18%,transparent 82%,#020617d9 100%);
+  --storefront-text: #eef4ff;
+  --storefront-muted: #aeb9c9;
+  --storefront-panel: #0b1220ed;
+  --storefront-panel-solid: #0b1220f2;
+  --storefront-panel-soft: #111827ed;
+  --storefront-panel-deep: #070b12f2;
+  --storefront-detail: #0b1220;
+  --storefront-detail-sub: #111c2f;
+  --storefront-border: #475569;
+  --storefront-border-soft: #334155;
+  --storefront-header: #080d15;
+  --storefront-header-muted: #9ca8b8;
+  --storefront-footer: #05080d;
+  --storefront-input: #111827;
+  --storefront-image-a: #f4f7fb;
+  --storefront-image-b: #e4e9f0;
+  --storefront-hero: radial-gradient(circle at 78% 45%,#2563eb24,transparent 26%),linear-gradient(120deg,#111827ee,#05080eee);
+  --storefront-accent-text: #ffffff;
+}
+
+[data-theme='light'] {
+  --storefront-bg-base: #edf5f1;
+  --storefront-bg-image: linear-gradient(180deg,#f8fbf9f2,#edf5f1e8 48%,#e7f0ebed),url('/pcb-storefront-bg.webp');
+  --storefront-vignette: radial-gradient(circle at 50% 12%,transparent 0 28%,#dbe8e066 64%,#d4e2da99 100%),linear-gradient(90deg,#e4eee8a8 0,transparent 18%,transparent 82%,#e4eee8a8 100%);
+  --storefront-text: #102018;
+  --storefront-muted: #536b60;
+  --storefront-panel: #fffffff0;
+  --storefront-panel-solid: #fffffff5;
+  --storefront-panel-soft: #f3f8f5f2;
+  --storefront-panel-deep: #f7faf8f5;
+  --storefront-detail: #ffffff;
+  --storefront-detail-sub: #edf4f0;
+  --storefront-border: #92b29f;
+  --storefront-border-soft: #b0c8ba;
+  --storefront-header: #f7fbf9;
+  --storefront-header-muted: #4f695c;
+  --storefront-footer: #e7f0eb;
+  --storefront-input: #edf4f0;
+  --storefront-image-a: #ffffff;
+  --storefront-image-b: #edf3ef;
+  --storefront-hero: radial-gradient(circle at 78% 45%,#0ea5e91c,transparent 26%),linear-gradient(120deg,#ffffffed,#edf6f1ed);
+  --storefront-accent-text: #ffffff;
+}
+
+.site-content-shell {
+  width: 100%;
+  max-width: var(--ms-container-width,1152px);
+  transition: max-width .25s ease;
+}
+
+.site-header__utility,
+.site-header__main {
+  max-width: var(--ms-container-width,1152px);
+}
+
+.site-header {
+  background: var(--storefront-header);
+  color: var(--storefront-text);
+  border-bottom-color: var(--storefront-border-soft);
+}
+.site-header__utility { color: var(--storefront-header-muted); }
+.site-brand b { color: var(--storefront-text); }
+.site-header__main>p { color: var(--storefront-muted); }
+.site-header nav a,
+.mobile-header-cart {
+  border-color: var(--storefront-border);
+  color: var(--storefront-text);
+}
+
+#site-footer {
+  background-color: var(--storefront-footer) !important;
+  color: var(--storefront-text) !important;
+}
+#site-footer > div {
+  max-width: var(--ms-container-width,1152px);
+}
+
+.pcb-store { color: var(--storefront-text); }
+.pcb-store:before {
+  background-color: var(--storefront-bg-base);
+  background-image: var(--storefront-bg-image);
+}
+.pcb-store:after { background: var(--storefront-vignette); }
+
+.pcb-energy__base polyline { stroke: var(--accent-color); }
+.pcb-hero {
+  border-color: var(--storefront-border);
+  border-radius: var(--ms-radius-panel);
+  background: var(--storefront-hero);
+}
+.pcb-hero:before { border-radius: var(--ms-radius-card); }
+.pcb-hero h1 em,
+.eyebrow,
+.section-heading span,
+.category-strip>div>span,
+.category-pills span,
+.product-card__body>small,
+.product-detail__content>small,
+.product-detail__meta b,
+.product-detail dt {
+  color: var(--accent-color);
+}
+.pcb-hero__copy>p,
+.section-heading>p,
+.product-card code,
+.catalogue-error p,
+.pagination span,
+.trust-grid small,
+.product-detail__content>p,
+.product-detail__content code {
+  color: var(--storefront-muted);
+}
+
+.hero-actions a,
+.search-deck button,
+.catalogue-error button,
+.product-card__buy button,
+.product-detail__actions button {
+  background: var(--accent-color);
+  color: var(--storefront-accent-text);
+}
+.hero-actions a,
+.hero-actions .secondary,
+.search-deck button,
+.search-deck>a,
+.category-pills button,
+.product-card,
+.catalogue-error,
+.pagination button,
+.trust-grid,
+.product-detail,
+.product-detail__actions a {
+  border-radius: var(--ms-radius-card);
+}
+.hero-actions a,
+.search-deck button,
+.catalogue-error button,
+.product-card__buy button,
+.product-detail__actions a,
+.product-detail__actions button {
+  border-radius: var(--ms-radius-control);
+}
+.product-card__image span,
+.mobile-header-cart span {
+  border-radius: var(--ms-radius-pill);
+}
+
+.hero-actions .secondary {
+  background: color-mix(in srgb, var(--storefront-panel) 88%, transparent);
+  color: var(--storefront-text);
+  border-color: var(--storefront-border);
+}
+
+.search-deck {
+  background: var(--storefront-panel);
+  border-color: var(--storefront-border);
+  border-radius: var(--ms-radius-card);
+}
+.search-deck svg { color: var(--accent-color); }
+.search-deck input { color: var(--storefront-text); }
+.search-deck select {
+  background: var(--storefront-input);
+  color: var(--storefront-text);
+  border-left-color: var(--storefront-border-soft);
+}
+.search-deck>a { border-color: var(--storefront-border-soft); color: var(--storefront-text); }
+
+.category-pills button {
+  background: var(--storefront-panel-soft);
+  border-color: var(--storefront-border-soft);
+  color: var(--storefront-text);
+}
+.category-pills button:hover { border-color: var(--accent-color); }
+.category-pills span { background: var(--storefront-detail-sub); }
+
+.product-card {
+  background: var(--storefront-panel-solid);
+  border-color: var(--storefront-border-soft);
+  border-radius: var(--ms-radius-card);
+}
+.product-card:hover { border-color: var(--accent-color); }
+.product-card__image {
+  background: linear-gradient(145deg,var(--storefront-image-a),var(--storefront-image-b));
+}
+.product-card__image span {
+  background: var(--storefront-detail-sub);
+  color: var(--accent-color);
+  border-color: var(--storefront-border-soft);
+}
+.product-card strong,
+.product-detail__actions strong { color: var(--accent-color); }
+
+.catalogue-error {
+  border-color: var(--storefront-border-soft);
+  border-radius: var(--ms-radius-card);
+  background: var(--storefront-panel-deep);
+}
+.catalogue-error svg { color: var(--accent-color); }
+.pagination button {
+  border-color: var(--storefront-border-soft);
+  background: var(--storefront-panel-deep);
+  color: var(--storefront-text);
+}
+
+.trust-grid {
+  background: var(--storefront-border-soft);
+  border-color: var(--storefront-border-soft);
+  border-radius: var(--ms-radius-card);
+}
+.trust-grid>div { background: var(--storefront-panel-solid); }
+.trust-grid svg { color: var(--accent-color); }
+
+.product-detail {
+  background: var(--storefront-detail);
+  border-color: var(--storefront-border);
+  border-radius: var(--ms-radius-panel);
+  color: var(--storefront-text);
+}
+.product-detail__close {
+  background: var(--storefront-detail);
+  border-color: var(--storefront-border);
+  color: var(--storefront-text);
+}
+.product-detail__meta span,
+.product-detail dl>div {
+  background: var(--storefront-detail-sub);
+  border-color: var(--storefront-border-soft);
+  border-radius: var(--ms-radius-control);
+}
+
+@media(max-width:640px){
+  .pcb-hero { border-radius: var(--ms-radius-card); }
+  .search-deck input,
+  .search-deck select { border-color: var(--storefront-border-soft); border-radius: var(--ms-radius-control); background: var(--storefront-panel); color: var(--storefront-text); }
+  .product-detail { border-radius: var(--ms-radius-card); }
+}
