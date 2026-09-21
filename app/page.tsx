@@ -20,6 +20,23 @@ const categoryCards = [
   { label: 'Modules', category: 'MODULES', icon: <Cpu /> },
 ];
 
+function PcbEnergyBackdrop() {
+  return <svg className="pcb-energy" viewBox="0 0 1440 1200" preserveAspectRatio="none" aria-hidden="true">
+    <g className="pcb-energy__base">
+      <polyline points="0,180 145,180 210,245 430,245 500,315 720,315 790,245 1030,245 1110,325 1440,325" />
+      <polyline points="0,705 170,705 255,620 470,620 555,705 840,705 930,615 1180,615 1260,695 1440,695" />
+      <polyline points="115,1200 115,1025 205,935 205,810 315,700 315,500 420,395" />
+      <polyline points="1320,0 1320,145 1230,235 1230,430 1140,520 1140,820 1040,920 1040,1200" />
+    </g>
+    <g className="pcb-energy__pulse">
+      <polyline points="0,180 145,180 210,245 430,245 500,315 720,315 790,245 1030,245 1110,325 1440,325" />
+      <polyline points="0,705 170,705 255,620 470,620 555,705 840,705 930,615 1180,615 1260,695 1440,695" />
+      <polyline points="115,1200 115,1025 205,935 205,810 315,700 315,500 420,395" />
+      <polyline points="1320,0 1320,145 1230,235 1230,430 1140,520 1140,820 1040,920 1040,1200" />
+    </g>
+  </svg>;
+}
+
 function Storefront() {
   const router = useRouter(), params = useSearchParams();
   const q = params.get('q') || '', category = params.get('category') || '', page = Number(params.get('page') || 1);
@@ -76,6 +93,7 @@ function Storefront() {
   useEffect(() => () => { if (addedTimerRef.current) clearTimeout(addedTimerRef.current); }, []);
 
   return <main className="pcb-store">
+    <PcbEnergyBackdrop />
     <section className="pcb-hero">
       <div className="pcb-hero__copy"><span className="eyebrow"><Zap size={14}/> Ghana&apos;s component supply desk</span><h1>Build bold ideas.<br/><em>Source the right parts.</em></h1><p>Quality electronic components, modules and accessories for repairs, prototypes and production.</p><div className="hero-actions"><a href="#catalogue">Browse components <ArrowRight size={17}/></a><a className="secondary" href="https://wa.me/233551507985">Talk to a parts expert</a></div></div>
       <div className="pcb-hero__chip" aria-hidden="true"><span className="chip-pin p1"/><span className="chip-pin p2"/><span className="chip-pin p3"/><span className="chip-pin p4"/><div><Cpu size={76}/><b>MACSUNNY</b><small>COMPONENTS / GH</small></div></div>
