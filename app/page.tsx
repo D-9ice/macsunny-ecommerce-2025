@@ -4,19 +4,37 @@ import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from 'react
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowRight, Box, Check, ChevronLeft, ChevronRight, Cpu, ExternalLink, Headphones, Search, ShieldCheck, ShoppingCart, Truck, X, Zap } from 'lucide-react';
+import { ArrowRight, Check, ChevronLeft, ChevronRight, Cpu, ExternalLink, Headphones, Search, ShieldCheck, ShoppingCart, Truck, X, Zap } from 'lucide-react';
 import { Product } from './lib/products';
 import { addToCart, getCart } from './lib/cart';
 import { showToast } from './components/Toast';
 import FloatingActionLauncher from './components/FloatingActionLauncher';
 
 type Pagination = { page: number; pages: number; total: number; limit: number };
-const fallbackCategories = ['Integrated Circuits', 'Semiconductors', 'Resistors', 'Capacitors', 'Modules', 'Connectors'];
+const fallbackCategories = ['Integrated Circuits', 'Semiconductors', 'Transistors', 'MOSFETs', 'Resistors', 'Capacitors', 'Modules', 'Connectors'];
+
+function ResistorSymbol() {
+  return <svg viewBox="0 0 32 24" aria-hidden="true"><path d="M2 12h5l2.5-5 4 10 4-10 4 10 2.5-5h6" /></svg>;
+}
+
+function CapacitorSymbol() {
+  return <svg viewBox="0 0 32 24" aria-hidden="true"><path d="M2 12h10m0-7v14m8-14v14m0-7h10" /></svg>;
+}
+
+function TransistorSymbol() {
+  return <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" /><path d="M7 16h7m0-8v16m0-12 8-6v7m-8 7 8 6v-7m0 0 4 4m-4-4 1 5" /></svg>;
+}
+
+function MosfetSymbol() {
+  return <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" /><path d="M6 16h5m0-7v14m4-11v8m0-4h7m0-9v18m0-14 5-3m-5 13 5 3m-9-8 3-2m-3 2 3 2" /></svg>;
+}
+
 const categoryCards = [
   { label: 'Integrated Circuits', category: 'INTEGRATED CIRCUIT (IC)', icon: <Cpu /> },
-  { label: 'Power Transistors', category: 'POWER TRANSISTORS', icon: <Zap /> },
-  { label: 'Resistors', category: 'Resistors', icon: <Box /> },
-  { label: 'Capacitors', category: 'CAPACITOR', icon: <Box /> },
+  { label: 'Transistors', category: 'POWER TRANSISTORS', icon: <TransistorSymbol /> },
+  { label: 'MOSFETs', category: 'MOSFETs', icon: <MosfetSymbol /> },
+  { label: 'Resistors', category: 'Resistors', icon: <ResistorSymbol /> },
+  { label: 'Capacitors', category: 'CAPACITOR', icon: <CapacitorSymbol /> },
   { label: 'Modules', category: 'MODULES', icon: <Cpu /> },
 ];
 

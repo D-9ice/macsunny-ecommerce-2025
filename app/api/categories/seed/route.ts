@@ -7,6 +7,7 @@ const defaultCategories = [
   'Inductors',
   'Loudspeakers',
   'Modules',
+  'MOSFETs',
   'Resistors',
   'Semiconductors',
   'Transistors',
