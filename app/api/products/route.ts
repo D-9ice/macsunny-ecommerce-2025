@@ -33,47 +33,7 @@ export async function GET(request: Request) {
       const pattern = new RegExp(safeRegex(search), 'i');
       query.$or = [{ name: pattern }, { category: pattern }, { sku: pattern }, { description: pattern }];
     }
-    if (category) {
-      const normalizedCategory = category.toLowerCase();
-      query.category = normalizedCategory === 'transistors' || normalizedCategory === 'transistor'
-        ? /transistors?/i
-        : new RegExp(`^${safeRegex(category)}import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { connectDB, ProductModel, CategoryModel } from '@/app/lib/mongodb';
-import { deleteBlobSafely } from '@/lib/images';
-
-const projection = 'sku name category price imageUrl imageAlt description quantity manufacturer mpn package pinCount datasheetUrl specifications verificationSources verificationConfidence verificationStatus imageSourceUrl createdAt updatedAt';
-const isAdmin = async () => (await cookies()).get('ms_admin')?.value === '1';
-const safeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const publicProduct = (item: Record<string, unknown>) => ({ ...item, image: item.imageUrl || null });
-const safeUrl = (value: unknown) => { try { const url = new URL(String(value || '')); return ['http:', 'https:'].includes(url.protocol) ? url.toString() : ''; } catch { return ''; } };
-const safeSpecs = (value: unknown) => Array.isArray(value) ? value.slice(0, 8).map((item) => ({ label: String(item?.label || '').slice(0, 80), value: String(item?.value || '').slice(0, 180) })).filter((item) => item.label && item.value) : [];
-const safeSources = (value: unknown) => Array.isArray(value) ? value.slice(0, 8).map((item) => ({ title: String(item?.title || '').slice(0, 180), url: safeUrl(item?.url), kind: String(item?.kind || 'other').slice(0, 40) })).filter((item) => item.url) : [];
-async function managedCategory(value: unknown) {
-  const requested = String(value || '').trim();
-  if (!requested) return '';
-  const exact = new RegExp(`^${safeRegex(requested)}$`, 'i');
-  const category = await CategoryModel.findOne({ name: exact }).select('name').lean() as unknown as { name?: string } | null;
-  return String(category?.name || '').trim();
-}
-
-export async function GET(request: Request) {
-  const requestId = crypto.randomUUID();
-  try {
-    await connectDB();
-    const params = new URL(request.url).searchParams;
-    const page = Math.max(1, Number.parseInt(params.get('page') || '1', 10) || 1);
-    const limit = Math.min(100, Math.max(1, Number.parseInt(params.get('limit') || '24', 10) || 24));
-    const search = (params.get('search') || params.get('q') || '').trim().slice(0, 100);
-    const category = (params.get('category') || '').trim().slice(0, 100);
-    const sortName = params.get('sort') || 'latest';
-    const query: Record<string, unknown> = {};
-    if (search) {
-      const pattern = new RegExp(safeRegex(search), 'i');
-      query.$or = [{ name: pattern }, { category: pattern }, { sku: pattern }, { description: pattern }];
-    }
-, 'i');
-    }
+    if (category) {\n      const normalizedCategory = category.toLowerCase();\n      query.category = normalizedCategory === 'transistors' || normalizedCategory === 'transistor'\n        ? /transistors?/i\n        : new RegExp(`^${safeRegex(category)}$`, 'i');\n    }
     const sort: Record<string, 1 | -1> = sortName === 'price-asc' ? { price: 1 } : sortName === 'price-desc' ? { price: -1 } : { createdAt: -1 };
     const [raw, total] = await Promise.all([
       ProductModel.find(query).select(projection).sort(sort).skip((page - 1) * limit).limit(limit).lean(),
