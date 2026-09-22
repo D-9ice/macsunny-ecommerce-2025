@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Boxes, LayoutDashboard, Palette, PackageSearch, Truck, Store } from 'lucide-react';
+import { Boxes, LayoutDashboard, Palette, PackageSearch, Search, Truck, Store } from 'lucide-react';
 
 type AdminWorkspaceProps = {
   title: string;
@@ -16,6 +16,7 @@ const items = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/inventory', label: 'Super Smart Manager', icon: Boxes },
   { href: '/admin/orders', label: 'Orders', icon: PackageSearch },
+  { href: '/admin/equivalents', label: 'Component Equivalents', icon: Search },
   { href: '/admin/delivery-settings', label: 'Delivery Settings', icon: Truck },
   { href: '/admin/settings', label: 'System Settings', icon: Palette },
 ];
