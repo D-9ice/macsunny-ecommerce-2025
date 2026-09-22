@@ -1,38 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB, ProductModel } from '@/app/lib/mongodb';
 import { isNexarConfigured, searchNexarEquivalents } from '@/app/lib/nexar';
-import mongoose from 'mongoose';
+import { EquivalentModel, EQUIVALENT_EQUIVALENT_CACHE_TTL_MS } from '@/app/lib/equivalents';
 import { cookies } from 'next/headers';
-
-const CACHE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
 function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
-
-const EquivalentSchema = new mongoose.Schema({
-  primary_sku: { type: String, required: true, index: true },
-  primary_name: String,
-  equivalents: [{
-    mpn: String,
-    manufacturer: String,
-    description: String,
-    specs: mongoose.Schema.Types.Mixed,
-    in_stock_external: Boolean,
-    distributor: String,
-    compatibility: { type: Number, default: 1.0 },
-    notes: String,
-  }],
-  // Keep legacy values readable while all new external results are stored as Nexar.
-  source: { type: String, enum: ['nexar', 'octopart', 'digikey', 'manual'], default: 'manual' },
-  cached_at: { type: Date, default: Date.now },
-  expires_at: { type: Date, default: () => new Date(Date.now() + CACHE_TTL_MS) },
-}, { timestamps: true });
-
-EquivalentSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
-
-const EquivalentModel = mongoose.models.Equivalent ||
-  mongoose.model('Equivalent', EquivalentSchema);
 
 async function appendLocalEquivalentMatches(results: any, equivalents: any[], searchTerm: string) {
   for (const equivalent of equivalents) {
@@ -148,6 +122,9 @@ export async function POST(request: NextRequest) {
       );
 
       results.cached_equivalents = {
+        primary_sku: cachedEquiv.primary_sku,
+        primary_description: cachedEquiv.primary_description || cachedEquiv.primary_name || '',
+        primary_specs: cachedEquiv.primary_specs || {},
         equivalents: cachedEquiv.equivalents,
         source: cachedEquiv.source,
         cached_at: cachedEquiv.cached_at,
@@ -166,10 +143,14 @@ export async function POST(request: NextRequest) {
       results.strategy.push('nexar_api');
 
       try {
-        const equivalents = await searchNexarEquivalents(searchTerm);
+        const nexarResult = await searchNexarEquivalents(searchTerm);
+        const equivalents = nexarResult.equivalents;
 
         if (equivalents.length > 0) {
           results.external_equivalents = {
+            primary_sku: nexarResult.source.mpn || searchTerm,
+            primary_description: nexarResult.source.description || '',
+            primary_specs: nexarResult.source.specs || {},
             equivalents,
             source: 'nexar',
             count: equivalents.length,
@@ -182,7 +163,9 @@ export async function POST(request: NextRequest) {
             { primary_sku: searchTerm },
             {
               primary_sku: searchTerm,
-              primary_name: equivalents[0]?.description || searchTerm,
+              primary_name: nexarResult.source.description || searchTerm,
+              primary_description: nexarResult.source.description || '',
+              primary_specs: nexarResult.source.specs || {},
               equivalents: equivalents.map((equivalent) => ({
                 mpn: equivalent.mpn,
                 manufacturer: equivalent.manufacturer,
@@ -194,7 +177,7 @@ export async function POST(request: NextRequest) {
               })),
               source: 'nexar',
               cached_at: new Date(),
-              expires_at: new Date(Date.now() + CACHE_TTL_MS),
+              expires_at: new Date(Date.now() + EQUIVALENT_CACHE_TTL_MS),
             },
             { upsert: true, new: true }
           );
