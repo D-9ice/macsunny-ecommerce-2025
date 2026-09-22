@@ -30,6 +30,12 @@ export async function connectDB() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      // Vercel may run multiple isolated function instances. Keep each
+      // instance's Atlas footprint deliberately small so an M0 cluster
+      // cannot be exhausted by multiplying default 100-connection pools.
+      maxPoolSize: 5,
+      minPoolSize: 0,
+      maxIdleTimeMS: 60_000,
     };
 
     console.log('⏳ Connecting to MongoDB...');
@@ -53,6 +59,15 @@ export async function connectDB() {
   }
 
   return cached.conn;
+}
+
+export async function getMongoDb() {
+  const connection = await connectDB();
+  const db = connection.connection.db;
+  if (!db) {
+    throw new Error('MongoDB database handle is unavailable');
+  }
+  return db;
 }
 
 // =====================
