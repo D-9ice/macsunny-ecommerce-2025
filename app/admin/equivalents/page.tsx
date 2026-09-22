@@ -9,6 +9,8 @@ interface Equivalent {
   primary_name?: string;
   primary_mpn?: string;
   primary_description?: string;
+  primary_datasheet_url?: string;
+  primary_reference_url?: string;
   primary_specs?: Record<string, string>;
   equivalents: Array<{
     mpn: string;
@@ -30,11 +32,12 @@ export default function EquivalentsManager() {
   const [testResult, setTestResult] = useState<any>(null);
   const [testLoading, setTestLoading] = useState(false);
   const [nexarConfigured, setNexarConfigured] = useState(false);
+  const [allDatasheetConfigured, setAllDatasheetConfigured] = useState(false);
   const [publicLookupEnabled, setPublicLookupEnabled] = useState(false);
 
   useEffect(() => {
     loadEquivalents();
-    checkNexarConfig();
+    checkProviderConfig();
   }, []);
 
   const loadEquivalents = async () => {
@@ -53,14 +56,19 @@ export default function EquivalentsManager() {
     }
   };
 
-  const checkNexarConfig = async () => {
+  const checkProviderConfig = async () => {
     try {
-      const res = await fetch('/api/equivalents/nexar', { cache: 'no-store' });
-      const data = await res.json();
-      setNexarConfigured(Boolean(data.configured));
-      setPublicLookupEnabled(Boolean(data.public_lookup_enabled));
+      const [nexarRes, allDatasheetRes] = await Promise.all([
+        fetch('/api/equivalents/nexar', { cache: 'no-store' }),
+        fetch('/api/equivalents/alldatasheet', { cache: 'no-store' }),
+      ]);
+      const nexar = await nexarRes.json();
+      const allDatasheet = await allDatasheetRes.json();
+      setNexarConfigured(Boolean(nexar.configured));
+      setAllDatasheetConfigured(Boolean(allDatasheet.configured));
+      setPublicLookupEnabled(Boolean(nexar.public_lookup_enabled || allDatasheet.public_lookup_enabled));
     } catch (error) {
-      console.error('Failed to check Nexar config:', error);
+      console.error('Failed to check external provider config:', error);
     }
   };
 
@@ -111,23 +119,23 @@ export default function EquivalentsManager() {
       <div className="space-y-6">
 
         {/* Configuration Status */}
-        <div className={`mb-6 p-4 rounded-lg ${nexarConfigured ? 'bg-green-900/20 border border-green-500/30' : 'bg-yellow-900/20 border border-yellow-500/30'}`}>
-          <div className="flex items-center gap-2">
+        <div className={`mb-6 rounded-lg border p-4 ${nexarConfigured ? 'border-green-500/30 bg-green-900/20' : 'border-yellow-500/30 bg-yellow-900/20'}`}>
+          <div className="flex items-start gap-2">
             <span className="text-xl">{nexarConfigured ? '✅' : '⚠️'}</span>
             <div>
               <p className="font-semibold">
-                {nexarConfigured ? 'External Component Lookup Connected' : 'External Component Lookup Not Connected'}
+                {nexarConfigured ? 'External Component Lookup Connected' : 'External Component Lookup Partially Connected'}
               </p>
-              {!nexarConfigured && (
-                <p className="text-sm text-slate-400 mt-1">
-                  Cached equivalents remain available. Complete the Nexar connection to enable live external component searches.
-                </p>
-              )}
-              {nexarConfigured && (
-                <p className="text-sm text-slate-400 mt-1">
-                  Admin searches can use Nexar and the local cache. Customer live lookup is <strong>{publicLookupEnabled ? 'enabled' : 'disabled'}</strong>.
-                </p>
-              )}
+              <p className="mt-1 text-sm text-slate-400">
+                Nexar: <strong>{nexarConfigured ? 'connected' : 'not connected'}</strong>
+                {' • '}
+                AllDatasheet fallback: <strong>{allDatasheetConfigured ? 'connected' : 'API-ready, registration pending'}</strong>
+                {' • '}
+                Customer live lookup is <strong>{publicLookupEnabled ? 'enabled' : 'disabled'}</strong>.
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                AllDatasheet direct datasheet references are available even before API activation.
+              </p>
             </div>
           </div>
         </div>
@@ -209,8 +217,8 @@ export default function EquivalentsManager() {
                 </div>
               )}
 
-              {(testResult.cached_equivalents || testResult.external_equivalents) && (() => {
-                const source = testResult.cached_equivalents || testResult.external_equivalents;
+              {(testResult.cached_equivalents || testResult.external_equivalents || testResult.external_datasheet) && (() => {
+                const source = testResult.cached_equivalents || testResult.external_equivalents || testResult.external_datasheet;
                 const specs = Object.entries(source.primary_specs || {}).slice(0, 8);
                 return (
                   <div>
@@ -221,6 +229,18 @@ export default function EquivalentsManager() {
                     )}
                     {source.primary_description && (
                       <p className="mb-3 text-sm leading-6 text-slate-300">{source.primary_description}</p>
+                    )}
+                    {(source.primary_datasheet_url || source.primary_reference_url || testResult.datasheet_reference?.url) && (
+                      <div className="mb-3 flex flex-wrap gap-2">
+                        {source.primary_datasheet_url && (
+                          <a href={source.primary_datasheet_url} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500">
+                            Open Datasheet
+                          </a>
+                        )}
+                        <a href={source.primary_reference_url || testResult.datasheet_reference?.url} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-slate-700 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-600">
+                          AllDatasheet Reference
+                        </a>
+                      </div>
                     )}
                     {specs.length > 0 && (
                       <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -246,10 +266,17 @@ export default function EquivalentsManager() {
 
               {(testResult.cached_equivalents?.equivalents || testResult.external_equivalents?.equivalents || []).length === 0 && (
                 testResult.found_in_inventory?.length > 0
-                  ? <p className="text-slate-400">MacSunny has this component in inventory. No equivalent alternatives are currently available from Nexar.</p>
-                  : (testResult.cached_equivalents || testResult.external_equivalents)
-                    ? <p className="text-slate-400">Component identified. No equivalent alternatives are currently available from Nexar for this part.</p>
-                    : <p className="text-slate-400">No matching component or equivalent alternatives were found.</p>
+                  ? <p className="text-slate-400">MacSunny has this component in inventory. No equivalent alternatives are currently available from the connected reference providers.</p>
+                  : (testResult.cached_equivalents || testResult.external_equivalents || testResult.external_datasheet)
+                    ? <p className="text-slate-400">Component identified. No equivalent alternatives are currently available from the connected reference providers.</p>
+                    : <div className="flex flex-wrap items-center gap-2 text-slate-400">
+                        <span>No matching component or equivalent alternatives were found.</span>
+                        {testResult.datasheet_reference?.url && (
+                          <a href={testResult.datasheet_reference.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-300 hover:text-blue-200">
+                            Check AllDatasheet reference
+                          </a>
+                        )}
+                      </div>
               )}
             </div>
           )}
@@ -300,6 +327,21 @@ export default function EquivalentsManager() {
                       </button>
                     </div>
                   </div>
+
+                  {(equiv.primary_datasheet_url || equiv.primary_reference_url) && (
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {equiv.primary_datasheet_url && (
+                        <a href={equiv.primary_datasheet_url} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500">
+                          Open Datasheet
+                        </a>
+                      )}
+                      {equiv.primary_reference_url && (
+                        <a href={equiv.primary_reference_url} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-slate-700 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-600">
+                          AllDatasheet Reference
+                        </a>
+                      )}
+                    </div>
+                  )}
 
                   {equiv.primary_specs && Object.keys(equiv.primary_specs).length > 0 && (
                     <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
