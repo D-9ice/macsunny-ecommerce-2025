@@ -26,6 +26,7 @@ export default function EquivalentsManager() {
   const [testResult, setTestResult] = useState<any>(null);
   const [testLoading, setTestLoading] = useState(false);
   const [nexarConfigured, setNexarConfigured] = useState(false);
+  const [publicLookupEnabled, setPublicLookupEnabled] = useState(false);
 
   useEffect(() => {
     loadEquivalents();
@@ -53,6 +54,7 @@ export default function EquivalentsManager() {
       const res = await fetch('/api/equivalents/nexar', { cache: 'no-store' });
       const data = await res.json();
       setNexarConfigured(Boolean(data.configured));
+      setPublicLookupEnabled(Boolean(data.public_lookup_enabled));
     } catch (error) {
       console.error('Failed to check Nexar config:', error);
     }
@@ -115,6 +117,11 @@ export default function EquivalentsManager() {
               {!nexarConfigured && (
                 <p className="text-sm text-slate-400 mt-1">
                   After creating the Nexar Supply application, set <code className="bg-gray-800 px-1 rounded">NEXAR_CLIENT_ID</code> and <code className="bg-gray-800 px-1 rounded">NEXAR_CLIENT_SECRET</code> in Vercel.
+                </p>
+              )}
+              {nexarConfigured && (
+                <p className="text-sm text-slate-400 mt-1">
+                  Public AI-triggered Nexar lookups are <strong>{publicLookupEnabled ? 'enabled' : 'disabled'}</strong>. Admin test searches remain allowed.
                 </p>
               )}
             </div>
