@@ -79,6 +79,8 @@ export async function POST(request: NextRequest) {
         primary_name: data.primary_name,
         primary_description: data.primary_description || data.primary_name || '',
         primary_manufacturer: data.primary_manufacturer || '',
+        primary_datasheet_url: data.primary_datasheet_url || '',
+        primary_reference_url: data.primary_reference_url || '',
         primary_specs: data.primary_specs || {},
         equivalents: data.equivalents || [],
         source: data.source || 'manual',
