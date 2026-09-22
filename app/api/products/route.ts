@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { connectDB, ProductModel, CategoryModel } from '@/app/lib/mongodb';
+import { EquivalentModel } from '@/app/lib/equivalents';
 import { deleteBlobSafely } from '@/lib/images';
 
 const projection = 'sku name category price imageUrl imageAlt description quantity manufacturer mpn package pinCount datasheetUrl specifications verificationSources verificationConfidence verificationStatus imageSourceUrl createdAt updatedAt';
@@ -10,6 +11,74 @@ const publicProduct = (item: Record<string, unknown>) => ({ ...item, image: item
 const safeUrl = (value: unknown) => { try { const url = new URL(String(value || '')); return ['http:', 'https:'].includes(url.protocol) ? url.toString() : ''; } catch { return ''; } };
 const safeSpecs = (value: unknown) => Array.isArray(value) ? value.slice(0, 8).map((item) => ({ label: String(item?.label || '').slice(0, 80), value: String(item?.value || '').slice(0, 180) })).filter((item) => item.label && item.value) : [];
 const safeSources = (value: unknown) => Array.isArray(value) ? value.slice(0, 8).map((item) => ({ title: String(item?.title || '').slice(0, 180), url: safeUrl(item?.url), kind: String(item?.kind || 'other').slice(0, 40) })).filter((item) => item.url) : [];
+const normalizePartKey = (value: unknown) => String(value || '').trim().toUpperCase();
+const specsObjectToList = (value: unknown) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+  return Object.entries(value as Record<string, unknown>)
+    .map(([label, specValue]) => ({ label: String(label).slice(0, 80), value: String(specValue || '').slice(0, 180) }))
+    .filter((item) => item.label && item.value)
+    .slice(0, 8);
+};
+const firstSpecValue = (specs: Array<{ label: string; value: string }>, patterns: RegExp[]) =>
+  specs.find((spec) => patterns.some((pattern) => pattern.test(spec.label)))?.value || '';
+
+function buildEquivalentTechnicalIndex(records: any[]) {
+  const index = new Map<string, { description: string; manufacturer: string; specs: Array<{ label: string; value: string }>; alternatives: string[] }>();
+
+  for (const record of records) {
+    const primary = normalizePartKey(record.primary_sku);
+    const equivalentMpns = Array.isArray(record.equivalents)
+      ? record.equivalents.map((item: any) => String(item?.mpn || '').trim()).filter(Boolean)
+      : [];
+
+    if (primary) {
+      index.set(primary, {
+        description: String(record.primary_description || record.primary_name || '').trim(),
+        manufacturer: String(record.primary_manufacturer || '').trim(),
+        specs: specsObjectToList(record.primary_specs),
+        alternatives: equivalentMpns.filter((mpn: string) => normalizePartKey(mpn) !== primary).slice(0, 8),
+      });
+    }
+
+    for (const equivalent of record.equivalents || []) {
+      const key = normalizePartKey(equivalent?.mpn);
+      if (!key) continue;
+      const alternatives = [record.primary_sku, ...equivalentMpns]
+        .map((value) => String(value || '').trim())
+        .filter(Boolean)
+        .filter((value, position, all) => normalizePartKey(value) !== key && all.findIndex((item) => normalizePartKey(item) === normalizePartKey(value)) === position)
+        .slice(0, 8);
+      index.set(key, {
+        description: String(equivalent?.description || '').trim(),
+        manufacturer: String(equivalent?.manufacturer || '').trim(),
+        specs: specsObjectToList(equivalent?.specs),
+        alternatives,
+      });
+    }
+  }
+
+  return index;
+}
+
+function applyEquivalentTechnicalFallback(item: Record<string, any>, index: Map<string, any>) {
+  const match = [item.mpn, item.sku].map(normalizePartKey).filter(Boolean).map((key) => index.get(key)).find(Boolean);
+  if (!match) return { ...item, equivalentPartNumbers: [] };
+
+  const existingSpecs = Array.isArray(item.specifications) ? item.specifications.filter((spec: any) => spec?.label && spec?.value) : [];
+  const specs = existingSpecs.length ? existingSpecs : match.specs;
+  const packageFallback = firstSpecValue(specs, [/package/i, /case/i]);
+  const pinFallback = firstSpecValue(specs, [/number of pins/i, /^pins?$/i, /pin count/i]);
+
+  return {
+    ...item,
+    description: String(item.description || '').trim() || match.description || '',
+    manufacturer: String(item.manufacturer || '').trim() || match.manufacturer || '',
+    specifications: specs,
+    package: String(item.package || '').trim() || packageFallback || '',
+    pinCount: String(item.pinCount || '').trim() || pinFallback || '',
+    equivalentPartNumbers: match.alternatives,
+  };
+}
 async function managedCategory(value: unknown) {
   const requested = String(value || '').trim();
   if (!requested) return '';
@@ -44,7 +113,128 @@ export async function GET(request: Request) {
       ProductModel.find(query).select(projection).sort(sort).skip((page - 1) * limit).limit(limit).lean(),
       ProductModel.countDocuments(query),
     ]);
-    const products = raw.map((item) => publicProduct(item as Record<string, unknown>));
+
+    const partKeys = [...new Set(raw.flatMap((item: any) => [normalizePartKey(item.mpn), normalizePartKey(item.sku)]).filter(Boolean))];
+    const cacheMatchers = partKeys.flatMap((key) => {
+      const exact = new RegExp(`^${safeRegex(key)}import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { connectDB, ProductModel, CategoryModel } from '@/app/lib/mongodb';
+import { EquivalentModel } from '@/app/lib/equivalents';
+import { deleteBlobSafely } from '@/lib/images';
+
+const projection = 'sku name category price imageUrl imageAlt description quantity manufacturer mpn package pinCount datasheetUrl specifications verificationSources verificationConfidence verificationStatus imageSourceUrl createdAt updatedAt';
+const isAdmin = async () => (await cookies()).get('ms_admin')?.value === '1';
+const safeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const publicProduct = (item: Record<string, unknown>) => ({ ...item, image: item.imageUrl || null });
+const safeUrl = (value: unknown) => { try { const url = new URL(String(value || '')); return ['http:', 'https:'].includes(url.protocol) ? url.toString() : ''; } catch { return ''; } };
+const safeSpecs = (value: unknown) => Array.isArray(value) ? value.slice(0, 8).map((item) => ({ label: String(item?.label || '').slice(0, 80), value: String(item?.value || '').slice(0, 180) })).filter((item) => item.label && item.value) : [];
+const safeSources = (value: unknown) => Array.isArray(value) ? value.slice(0, 8).map((item) => ({ title: String(item?.title || '').slice(0, 180), url: safeUrl(item?.url), kind: String(item?.kind || 'other').slice(0, 40) })).filter((item) => item.url) : [];
+const normalizePartKey = (value: unknown) => String(value || '').trim().toUpperCase();
+const specsObjectToList = (value: unknown) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+  return Object.entries(value as Record<string, unknown>)
+    .map(([label, specValue]) => ({ label: String(label).slice(0, 80), value: String(specValue || '').slice(0, 180) }))
+    .filter((item) => item.label && item.value)
+    .slice(0, 8);
+};
+const firstSpecValue = (specs: Array<{ label: string; value: string }>, patterns: RegExp[]) =>
+  specs.find((spec) => patterns.some((pattern) => pattern.test(spec.label)))?.value || '';
+
+function buildEquivalentTechnicalIndex(records: any[]) {
+  const index = new Map<string, { description: string; manufacturer: string; specs: Array<{ label: string; value: string }>; alternatives: string[] }>();
+
+  for (const record of records) {
+    const primary = normalizePartKey(record.primary_sku);
+    const equivalentMpns = Array.isArray(record.equivalents)
+      ? record.equivalents.map((item: any) => String(item?.mpn || '').trim()).filter(Boolean)
+      : [];
+
+    if (primary) {
+      index.set(primary, {
+        description: String(record.primary_description || record.primary_name || '').trim(),
+        manufacturer: String(record.primary_manufacturer || '').trim(),
+        specs: specsObjectToList(record.primary_specs),
+        alternatives: equivalentMpns.filter((mpn: string) => normalizePartKey(mpn) !== primary).slice(0, 8),
+      });
+    }
+
+    for (const equivalent of record.equivalents || []) {
+      const key = normalizePartKey(equivalent?.mpn);
+      if (!key) continue;
+      const alternatives = [record.primary_sku, ...equivalentMpns]
+        .map((value) => String(value || '').trim())
+        .filter(Boolean)
+        .filter((value, position, all) => normalizePartKey(value) !== key && all.findIndex((item) => normalizePartKey(item) === normalizePartKey(value)) === position)
+        .slice(0, 8);
+      index.set(key, {
+        description: String(equivalent?.description || '').trim(),
+        manufacturer: String(equivalent?.manufacturer || '').trim(),
+        specs: specsObjectToList(equivalent?.specs),
+        alternatives,
+      });
+    }
+  }
+
+  return index;
+}
+
+function applyEquivalentTechnicalFallback(item: Record<string, any>, index: Map<string, any>) {
+  const match = [item.mpn, item.sku].map(normalizePartKey).filter(Boolean).map((key) => index.get(key)).find(Boolean);
+  if (!match) return { ...item, equivalentPartNumbers: [] };
+
+  const existingSpecs = Array.isArray(item.specifications) ? item.specifications.filter((spec: any) => spec?.label && spec?.value) : [];
+  const specs = existingSpecs.length ? existingSpecs : match.specs;
+  const packageFallback = firstSpecValue(specs, [/package/i, /case/i]);
+  const pinFallback = firstSpecValue(specs, [/number of pins/i, /^pins?$/i, /pin count/i]);
+
+  return {
+    ...item,
+    description: String(item.description || '').trim() || match.description || '',
+    manufacturer: String(item.manufacturer || '').trim() || match.manufacturer || '',
+    specifications: specs,
+    package: String(item.package || '').trim() || packageFallback || '',
+    pinCount: String(item.pinCount || '').trim() || pinFallback || '',
+    equivalentPartNumbers: match.alternatives,
+  };
+}
+async function managedCategory(value: unknown) {
+  const requested = String(value || '').trim();
+  if (!requested) return '';
+  const exact = new RegExp(`^${safeRegex(requested)}$`, 'i');
+  const category = await CategoryModel.findOne({ name: exact }).select('name').lean() as unknown as { name?: string } | null;
+  return String(category?.name || '').trim();
+}
+
+export async function GET(request: Request) {
+  const requestId = crypto.randomUUID();
+  try {
+    await connectDB();
+    const params = new URL(request.url).searchParams;
+    const page = Math.max(1, Number.parseInt(params.get('page') || '1', 10) || 1);
+    const limit = Math.min(100, Math.max(1, Number.parseInt(params.get('limit') || '24', 10) || 24));
+    const search = (params.get('search') || params.get('q') || '').trim().slice(0, 100);
+    const category = (params.get('category') || '').trim().slice(0, 100);
+    const sortName = params.get('sort') || 'latest';
+    const query: Record<string, unknown> = {};
+    if (search) {
+      const pattern = new RegExp(safeRegex(search), 'i');
+      query.$or = [{ name: pattern }, { category: pattern }, { sku: pattern }, { mpn: pattern }, { description: pattern }];
+    }
+    if (category) {
+      const normalizedCategory = category.toLowerCase();
+      query.category = normalizedCategory === 'transistors' || normalizedCategory === 'transistor'
+        ? /transistors?/i
+        : new RegExp(`^${safeRegex(category)}$`, 'i');
+    }
+    const sort: Record<string, 1 | -1> = sortName === 'price-asc' ? { price: 1 } : sortName === 'price-desc' ? { price: -1 } : { createdAt: -1 };
+, 'i');
+      return [{ primary_sku: exact }, { 'equivalents.mpn': exact }];
+    });
+    const equivalentRecords = cacheMatchers.length
+      ? await EquivalentModel.find({ expires_at: { $gt: new Date() }, $or: cacheMatchers }).lean()
+      : [];
+    const technicalIndex = buildEquivalentTechnicalIndex(equivalentRecords as any[]);
+    const products = raw.map((item: any) => publicProduct(applyEquivalentTechnicalFallback(item, technicalIndex)));
     return NextResponse.json({ success: true, data: products, products, items: products, pagination: { page, limit, total, pages: Math.max(1, Math.ceil(total / limit)) }, requestId });
   } catch (error) {
     console.error('products.list.failed', { requestId, error });
