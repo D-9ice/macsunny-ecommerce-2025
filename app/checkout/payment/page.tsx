@@ -65,7 +65,6 @@ function PaymentContent() {
         ],
       },
       onSuccess: async (transaction: any) => {
-        setProcessing(false);
         try {
           const verifyResponse = await fetch('/api/payments/verify', {
             method: 'POST',
@@ -77,11 +76,13 @@ function PaymentContent() {
           });
           const verification = await verifyResponse.json();
           if (!verifyResponse.ok || !verification?.success) {
+            setProcessing(false);
             alert(verification?.message || 'Payment could not be verified. Please contact support.');
             return;
           }
         } catch (error) {
           console.error('Failed to verify payment:', error);
+          setProcessing(false);
           alert('Payment verification failed. Please contact support with your payment reference.');
           return;
         }
