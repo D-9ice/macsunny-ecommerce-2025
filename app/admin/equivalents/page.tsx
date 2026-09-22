@@ -6,6 +6,8 @@ interface Equivalent {
   _id: string;
   primary_sku: string;
   primary_name?: string;
+  primary_description?: string;
+  primary_specs?: Record<string, string>;
   equivalents: Array<{
     mpn: string;
     manufacturer: string;
@@ -166,10 +168,25 @@ export default function EquivalentsManager() {
                 )}
               </div>
 
-              {/* Equivalent part numbers only */}
-              {(testResult.cached_equivalents || testResult.external_equivalents) && (
-                <div>
-                  <p className="mb-2 font-semibold text-blue-400">Equivalent Part Numbers</p>
+              {(testResult.cached_equivalents || testResult.external_equivalents) && (() => {
+                const source = testResult.cached_equivalents || testResult.external_equivalents;
+                const specs = Object.entries(source.primary_specs || {}).slice(0, 8);
+                return (
+                  <div>
+                    {source.primary_description && (
+                      <p className="mb-3 text-sm leading-6 text-slate-300">{source.primary_description}</p>
+                    )}
+                    {specs.length > 0 && (
+                      <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                        {specs.map(([label, value]) => (
+                          <div key={label} className="rounded-lg bg-slate-800 px-3 py-2">
+                            <span className="block text-[11px] uppercase tracking-wide text-slate-400">{label}</span>
+                            <span className="text-sm text-slate-100">{String(value)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <p className="mb-2 font-semibold text-blue-400">Equivalent Part Numbers</p>
                   <div className="flex flex-wrap gap-2">
                     {(testResult.cached_equivalents?.equivalents || testResult.external_equivalents?.equivalents || []).slice(0, 10).map((eq: any, i: number) => (
                       <span key={i} className="rounded-lg bg-slate-800 px-3 py-2 font-mono text-sm font-semibold text-blue-200">
@@ -177,8 +194,9 @@ export default function EquivalentsManager() {
                       </span>
                     ))}
                   </div>
-                </div>
-              )}
+                  </div>
+                );
+              })()}
 
               {(testResult.cached_equivalents?.equivalents || testResult.external_equivalents?.equivalents || []).length === 0 && (
                 <p className="text-slate-400">No matches found in inventory or component database.</p>
@@ -208,7 +226,14 @@ export default function EquivalentsManager() {
               {equivalents.map((equiv) => (
                 <div key={equiv._id} className="bg-gray-900 rounded-lg p-4">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-lg font-mono text-blue-300">{equiv.primary_sku}</h3>
+                    <div>
+                      <h3 className="font-bold text-lg font-mono text-blue-300">{equiv.primary_sku}</h3>
+                      {(equiv.primary_description || equiv.primary_name) && (
+                        <p className="mt-1 max-w-4xl text-sm leading-6 text-slate-300">
+                          {equiv.primary_description || equiv.primary_name}
+                        </p>
+                      )}
+                    </div>
                     <div className="flex items-center">
                       <button
                         onClick={() => deleteEquivalent(equiv.primary_sku)}
@@ -218,6 +243,17 @@ export default function EquivalentsManager() {
                       </button>
                     </div>
                   </div>
+
+                  {equiv.primary_specs && Object.keys(equiv.primary_specs).length > 0 && (
+                    <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                      {Object.entries(equiv.primary_specs).slice(0, 8).map(([label, value]) => (
+                        <div key={label} className="rounded-lg bg-slate-800 px-3 py-2">
+                          <span className="block text-[11px] uppercase tracking-wide text-slate-400">{label}</span>
+                          <span className="text-sm text-slate-100">{String(value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   <div className="text-sm">
                     <p className="text-slate-400 mb-1">Equivalents ({equiv.equivalents.length}):</p>
