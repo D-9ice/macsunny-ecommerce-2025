@@ -26,6 +26,8 @@ After a Nexar Supply application has been created, configure these server-side v
 ```bash
 NEXAR_CLIENT_ID=...
 NEXAR_CLIENT_SECRET=...
+# Optional. Leave unset/false during evaluation testing:
+NEXAR_PUBLIC_LOOKUP_ENABLED=false
 ```
 
 Do not expose either value through `NEXT_PUBLIC_*` variables or client-side code.
@@ -77,6 +79,9 @@ source: "nexar"
 - Client secret remains server-side only.
 - Nexar configuration status is admin-only.
 - External credentials are never returned to the browser.
+- Public AI-triggered Nexar lookups are disabled by default.
+- Admin test searches may still call Nexar when credentials are configured.
+- Set `NEXAR_PUBLIC_LOOKUP_ENABLED=true` only when you intentionally want customer traffic to consume the Nexar allowance.
 - The retired `OCTOPART_API_KEY` variable and `/api/equivalents/octopart` route are not used.
 - Do not commit credentials to Git.
 
