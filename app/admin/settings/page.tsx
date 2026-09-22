@@ -44,28 +44,16 @@ export default function SettingsPage(): React.JSX.Element {
 
   useEffect(() => {
     async function loadStats() {
-      const apiStats = await fetchJsonSafe('/api/stats');
-      if (apiStats) {
-        setStats({
-          products: apiStats.products ?? 0,
-          orders: apiStats.orders ?? 0,
-          categories: apiStats.categories ?? 0,
-          environment: apiStats.environment ?? 'Production',
-          memBytes: apiStats.memBytes ?? 0,
-          dbUptimeSec: apiStats.dbUptimeSec ?? 0,
-        });
-        return;
-      }
+      const apiStats = await fetchJsonSafe('/api/db-status', { cache: 'no-store' });
+      if (!apiStats || apiStats.status !== 'connected') return;
 
-      const prodRes = await fetchJsonSafe('/api/products');
-      const ordersRes = await fetchJsonSafe('/api/orders');
       setStats({
-        products: prodRes?.products?.length ?? prodRes?.data?.length ?? 0,
-        orders: ordersRes?.orders?.length ?? 0,
-        categories: 0,
-        environment: 'Development',
-        memBytes: (performance as any)?.memory?.usedJSHeapSize ?? 0,
-        dbUptimeSec: 0,
+        products: apiStats.products ?? 0,
+        orders: apiStats.orders ?? 0,
+        categories: apiStats.categories ?? 0,
+        environment: apiStats.environment ?? 'Production',
+        memBytes: apiStats.memBytes ?? 0,
+        dbUptimeSec: apiStats.dbUptimeSec ?? 0,
       });
     }
 
