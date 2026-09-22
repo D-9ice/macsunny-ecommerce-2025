@@ -37,6 +37,22 @@ export default function AdminWorkspace({ title, subtitle, children, actions }: A
         {actions ? <div className="ml-3 flex shrink-0 items-center gap-2">{actions}</div> : null}
       </header>
 
+      <nav className="flex shrink-0 gap-2 overflow-x-auto border-b border-slate-800 bg-slate-950 px-3 py-2 lg:hidden" aria-label="Admin modules">
+        {items.map(({ href, label, icon: Icon }) => {
+          const active = pathname === href || pathname.startsWith(href + '/');
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${active ? 'bg-violet-600 text-white' : 'bg-slate-900 text-slate-300'}`}
+            >
+              <Icon size={15} />
+              <span>{label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
       <div className="flex min-h-0 flex-1">
         <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-800 bg-slate-950 p-3 lg:flex">
           <nav className="space-y-2" aria-label="Admin modules">
