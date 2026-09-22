@@ -106,8 +106,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const client = await getMongoClient();
-    const db = client.db('macsunny');
+    const db = await getMongoDb();
     
     // Update or insert settings
     await db.collection('delivery_settings').updateOne(
