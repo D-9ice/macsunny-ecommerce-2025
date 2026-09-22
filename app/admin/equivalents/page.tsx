@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import AdminWorkspace from '@/app/admin/components/AdminWorkspace';
 
 interface Equivalent {
@@ -157,7 +158,9 @@ export default function EquivalentsManager() {
                 <span className="text-xl">{testResult.success ? '✅' : '❌'}</span>
                 <p className="font-semibold">
                   {(() => {
-                    const total = (testResult.cached_equivalents?.equivalents || testResult.external_equivalents?.equivalents || []).length;
+                    const localCount = testResult.found_in_inventory?.length || 0;
+                    const equivalentCount = (testResult.cached_equivalents?.equivalents || testResult.external_equivalents?.equivalents || []).length;
+                    const total = localCount + equivalentCount;
                     return `${total} result${total === 1 ? '' : 's'} found`;
                   })()}
                 </p>
@@ -168,6 +171,43 @@ export default function EquivalentsManager() {
                   </div>
                 )}
               </div>
+
+              {testResult.found_in_inventory?.length > 0 && (
+                <div className="mb-4">
+                  <p className="mb-2 font-semibold text-emerald-400">MacSunny Inventory</p>
+                  <div className="space-y-2">
+                    {testResult.found_in_inventory.map((product: any) => (
+                      <div key={product.sku} className="flex gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
+                        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-white p-1">
+                          <Image
+                            src={product.image || '/macsunny-logo.png'}
+                            alt={product.name || product.sku}
+                            width={64}
+                            height={64}
+                            unoptimized
+                            className="h-full w-full object-contain"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-mono font-bold text-emerald-200">{product.sku}</span>
+                            {product.mpn && product.mpn.toUpperCase() !== product.sku.toUpperCase() && <span className="font-mono text-xs text-slate-400">{product.mpn}</span>}
+                            <span className="rounded bg-emerald-600/20 px-2 py-0.5 text-xs text-emerald-300">In MacSunny inventory</span>
+                          </div>
+                          <p className="mt-1 font-medium text-slate-100">{product.name}</p>
+                          {product.description && <p className="mt-1 text-xs leading-5 text-slate-400">{product.description}</p>}
+                          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
+                            {product.package && <span>Package: {product.package}</span>}
+                            {product.pinCount && <span>Pins: {product.pinCount}</span>}
+                            <span>Stock: {product.quantity ?? 0}</span>
+                            <span>GHS {Number(product.price || 0).toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {(testResult.cached_equivalents || testResult.external_equivalents) && (() => {
                 const source = testResult.cached_equivalents || testResult.external_equivalents;
@@ -205,9 +245,11 @@ export default function EquivalentsManager() {
               })()}
 
               {(testResult.cached_equivalents?.equivalents || testResult.external_equivalents?.equivalents || []).length === 0 && (
-                (testResult.cached_equivalents || testResult.external_equivalents)
-                  ? <p className="text-slate-400">Component identified. No equivalent alternatives are currently available from Nexar for this part.</p>
-                  : <p className="text-slate-400">No matching component or equivalent alternatives were found.</p>
+                testResult.found_in_inventory?.length > 0
+                  ? <p className="text-slate-400">MacSunny has this component in inventory. No equivalent alternatives are currently available from Nexar.</p>
+                  : (testResult.cached_equivalents || testResult.external_equivalents)
+                    ? <p className="text-slate-400">Component identified. No equivalent alternatives are currently available from Nexar for this part.</p>
+                    : <p className="text-slate-400">No matching component or equivalent alternatives were found.</p>
               )}
             </div>
           )}
