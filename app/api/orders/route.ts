@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { connectDB, OrderModel } from '@/app/lib/mongodb';
 import { orderSchema } from '@/app/lib/validations';
 import { z } from 'zod';
+import { cookies } from 'next/headers';
+
+const isAdmin = async () => (await cookies()).get('ms_admin')?.value === '1';
 
 /**
  * ✅ Utility function: safely converts _id (ObjectId) to string
@@ -20,6 +23,7 @@ function normalizeOrder(order: any) {
  * ✅ GET — Fetch all orders
  */
 export async function GET() {
+  if (!(await isAdmin())) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   try {
     await connectDB();
 
@@ -94,6 +98,7 @@ export async function POST(request: Request) {
  * ✅ PUT — Update order status
  */
 export async function PUT(request: Request) {
+  if (!(await isAdmin())) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   try {
     await connectDB();
     const body = await request.json();
@@ -135,6 +140,7 @@ export async function PUT(request: Request) {
  * ✅ DELETE — Delete completed and cancelled orders
  */
 export async function DELETE(request: Request) {
+  if (!(await isAdmin())) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   try {
     await connectDB();
     
