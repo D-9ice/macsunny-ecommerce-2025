@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/app/lib/mongodb';
 import mongoose from 'mongoose';
+import { cookies } from 'next/headers';
+
+const isAdmin = async () => (await cookies()).get('ms_admin')?.value === '1';
 
 // Schema for caching component equivalents (90-day TTL)
 const EquivalentSchema = new mongoose.Schema({
@@ -28,6 +31,7 @@ const EquivalentModel = mongoose.models.Equivalent ||
   mongoose.model('Equivalent', EquivalentSchema);
 
 export async function GET(request: NextRequest) {
+  if (!(await isAdmin())) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
@@ -79,6 +83,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!(await isAdmin())) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
   try {
     await connectDB();
     const data = await request.json();
@@ -117,6 +122,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  if (!(await isAdmin())) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
