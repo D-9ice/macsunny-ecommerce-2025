@@ -14,6 +14,7 @@ Provide MacSunny customers and administrators with useful component alternatives
 4. Cache returned alternatives for 90 days.
 5. Cross-check returned MPNs against MacSunny inventory.
 6. Return local stock first, then cached/external reference data.
+7. External Nexar calls from public/customer flows are blocked unless `NEXAR_PUBLIC_LOOKUP_ENABLED=true`; authenticated admin test searches remain permitted.
 
 ### External provider
 
@@ -25,6 +26,7 @@ Authentication:
 - Client Credentials grant
 - Scope: `supply.domain`
 - Credentials: `NEXAR_CLIENT_ID` and `NEXAR_CLIENT_SECRET`
+- Public external lookup gate: `NEXAR_PUBLIC_LOOKUP_ENABLED` (defaults effectively to false unless explicitly set to `true`)
 - Access tokens are obtained server-side and cached until shortly before expiry.
 
 GraphQL:
