@@ -1,34 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/app/lib/mongodb';
-import mongoose from 'mongoose';
+import { EquivalentModel, EQUIVALENT_CACHE_TTL_MS } from '@/app/lib/equivalents';
 import { cookies } from 'next/headers';
 
 const isAdmin = async () => (await cookies()).get('ms_admin')?.value === '1';
-
-// Schema for caching component equivalents (90-day TTL)
-const EquivalentSchema = new mongoose.Schema({
-  primary_sku: { type: String, required: true, index: true },
-  primary_name: String,
-  equivalents: [{
-    mpn: String,
-    manufacturer: String,
-    description: String,
-    specs: mongoose.Schema.Types.Mixed,
-    in_stock_external: Boolean,
-    distributor: String,
-    compatibility: { type: Number, default: 1.0 }, // 0.0-1.0
-    notes: String,
-  }],
-  source: { type: String, enum: ['nexar', 'octopart', 'digikey', 'manual'], default: 'manual' },
-  cached_at: { type: Date, default: Date.now },
-  expires_at: { type: Date, default: () => new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) }, // 90 days
-}, { timestamps: true });
-
-// Create TTL index for auto-deletion after expiry
-EquivalentSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
-
-const EquivalentModel = mongoose.models.Equivalent || 
-  mongoose.model('Equivalent', EquivalentSchema);
 
 export async function GET(request: NextRequest) {
   if (!(await isAdmin())) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
@@ -102,10 +77,13 @@ export async function POST(request: NextRequest) {
       {
         primary_sku: data.primary_sku.toUpperCase(),
         primary_name: data.primary_name,
+        primary_description: data.primary_description || data.primary_name || '',
+        primary_manufacturer: data.primary_manufacturer || '',
+        primary_specs: data.primary_specs || {},
         equivalents: data.equivalents || [],
         source: data.source || 'manual',
         cached_at: new Date(),
-        expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+        expires_at: new Date(Date.now() + EQUIVALENT_CACHE_TTL_MS),
       },
       { upsert: true, new: true }
     );
