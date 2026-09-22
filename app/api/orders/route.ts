@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectDB, OrderModel } from '@/app/lib/mongodb';
 import { orderSchema } from '@/app/lib/validations';
-import { z } from 'zod';
 import { cookies } from 'next/headers';
 
 const isAdmin = async () => (await cookies()).get('ms_admin')?.value === '1';
@@ -139,7 +138,7 @@ export async function PUT(request: Request) {
 /**
  * ✅ DELETE — Delete completed and cancelled orders
  */
-export async function DELETE(request: Request) {
+export async function DELETE() {
   if (!(await isAdmin())) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   try {
     await connectDB();
