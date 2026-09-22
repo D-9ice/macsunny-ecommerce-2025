@@ -23,7 +23,7 @@ const firstSpecValue = (specs: Array<{ label: string; value: string }>, patterns
   specs.find((spec) => patterns.some((pattern) => pattern.test(spec.label)))?.value || '';
 
 function buildEquivalentTechnicalIndex(records: any[]) {
-  const index = new Map<string, { description: string; manufacturer: string; specs: Array<{ label: string; value: string }>; alternatives: string[] }>();
+  const index = new Map<string, { description: string; manufacturer: string; specs: Array<{ label: string; value: string }>; alternatives: string[]; datasheetUrl: string }>();
 
   for (const record of records) {
     const primary = normalizePartKey(record.primary_sku);
@@ -37,6 +37,7 @@ function buildEquivalentTechnicalIndex(records: any[]) {
         manufacturer: String(record.primary_manufacturer || '').trim(),
         specs: specsObjectToList(record.primary_specs),
         alternatives: equivalentMpns.filter((mpn: string) => normalizePartKey(mpn) !== primary).slice(0, 8),
+        datasheetUrl: String(record.primary_datasheet_url || record.primary_reference_url || '').trim(),
       };
       index.set(primary, primaryTechnical);
 
@@ -59,6 +60,7 @@ function buildEquivalentTechnicalIndex(records: any[]) {
         manufacturer: String(equivalent?.manufacturer || '').trim(),
         specs: specsObjectToList(equivalent?.specs),
         alternatives,
+        datasheetUrl: '',
       });
     }
   }
@@ -82,6 +84,7 @@ function applyEquivalentTechnicalFallback(item: Record<string, any>, index: Map<
     specifications: specs,
     package: String(item.package || '').trim() || packageFallback || '',
     pinCount: String(item.pinCount || '').trim() || pinFallback || '',
+    datasheetUrl: String(item.datasheetUrl || '').trim() || match.datasheetUrl || '',
     equivalentPartNumbers: match.alternatives,
   };
 }
