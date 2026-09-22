@@ -155,6 +155,10 @@ function stockSellers(sellers: NexarSeller[] | null | undefined) {
   return [...names];
 }
 
+function normalizeMpnForMatch(value: string | null | undefined) {
+  return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
 function nexarLookupCandidates(partNumber: string) {
   const normalized = partNumber.trim();
   const compact = normalized.replace(/\s+/g, '').toUpperCase();
@@ -171,7 +175,7 @@ function nexarLookupCandidates(partNumber: string) {
 
 const SIMILAR_PARTS_QUERY = `
   query MacSunnyEquivalentSearch($mpn: String!) {
-    supSearchMpn(q: $mpn, limit: 1) {
+    supSearchMpn(q: $mpn, limit: 10) {
       results {
         part {
           mpn
@@ -258,7 +262,11 @@ export async function searchNexarEquivalents(partNumber: string): Promise<NexarE
       throw new Error(`Nexar GraphQL error: ${message || 'Unknown error'}`);
     }
 
-    const candidatePart = payload?.data?.supSearchMpn?.results?.[0]?.part;
+    const candidateKey = normalizeMpnForMatch(candidate);
+    const candidatePart = (payload?.data?.supSearchMpn?.results || [])
+      .map((result) => result.part)
+      .find((part) => part && normalizeMpnForMatch(part.mpn) === candidateKey);
+
     if (candidatePart) {
       sourcePart = candidatePart;
       resolvedQuery = candidate;
