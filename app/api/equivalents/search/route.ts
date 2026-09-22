@@ -124,6 +124,7 @@ export async function POST(request: NextRequest) {
       results.cached_equivalents = {
         primary_sku: cachedEquiv.primary_sku,
         primary_description: cachedEquiv.primary_description || cachedEquiv.primary_name || '',
+        primary_manufacturer: cachedEquiv.primary_manufacturer || '',
         primary_specs: cachedEquiv.primary_specs || {},
         equivalents: cachedEquiv.equivalents,
         source: cachedEquiv.source,
@@ -150,6 +151,7 @@ export async function POST(request: NextRequest) {
           results.external_equivalents = {
             primary_sku: nexarResult.source.mpn || searchTerm,
             primary_description: nexarResult.source.description || '',
+            primary_manufacturer: nexarResult.source.manufacturer || '',
             primary_specs: nexarResult.source.specs || {},
             equivalents,
             source: 'nexar',
@@ -165,6 +167,7 @@ export async function POST(request: NextRequest) {
               primary_sku: searchTerm,
               primary_name: nexarResult.source.description || searchTerm,
               primary_description: nexarResult.source.description || '',
+              primary_manufacturer: nexarResult.source.manufacturer || '',
               primary_specs: nexarResult.source.specs || {},
               equivalents: equivalents.map((equivalent) => ({
                 mpn: equivalent.mpn,
