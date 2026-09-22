@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB, ProductModel } from '@/app/lib/mongodb';
 import { isNexarConfigured, searchNexarEquivalents } from '@/app/lib/nexar';
 import mongoose from 'mongoose';
+import { cookies } from 'next/headers';
 
 const CACHE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
@@ -93,6 +94,11 @@ export async function POST(request: NextRequest) {
     }
 
     const safeSearch = escapeRegex(searchTerm);
+    const adminAuthenticated = (await cookies()).get('ms_admin')?.value === '1';
+    const publicExternalEnabled = process.env.NEXAR_PUBLIC_LOOKUP_ENABLED === 'true';
+    const externalLookupAllowed =
+      isNexarConfigured() && (adminAuthenticated || publicExternalEnabled);
+
     const results: any = {
       query: searchTerm,
       found_in_inventory: [],
@@ -101,6 +107,8 @@ export async function POST(request: NextRequest) {
       external_provider: {
         name: 'Nexar',
         configured: isNexarConfigured(),
+        public_lookup_enabled: publicExternalEnabled,
+        lookup_allowed: externalLookupAllowed,
       },
       strategy: [],
     };
@@ -154,7 +162,7 @@ export async function POST(request: NextRequest) {
     }
 
     // STEP 3: Nexar external search only on cache miss.
-    if (!cachedEquiv && includeExternal && isNexarConfigured()) {
+    if (!cachedEquiv && includeExternal && externalLookupAllowed) {
       results.strategy.push('nexar_api');
 
       try {
@@ -208,6 +216,8 @@ export async function POST(request: NextRequest) {
       cache_used: Boolean(results.cached_equivalents),
       api_called: results.strategy.includes('nexar_api'),
       external_configured: isNexarConfigured(),
+      external_lookup_allowed: externalLookupAllowed,
+      public_external_lookup_enabled: publicExternalEnabled,
       external_provider: 'nexar',
     };
 
@@ -231,5 +241,6 @@ export async function GET() {
     info: 'POST with { "query": "COMPONENT_SKU" } to search for equivalents',
     provider: 'nexar',
     nexar_configured: isNexarConfigured(),
+    public_lookup_enabled: process.env.NEXAR_PUBLIC_LOOKUP_ENABLED === 'true',
   });
 }
