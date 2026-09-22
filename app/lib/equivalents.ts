@@ -8,6 +8,8 @@ const EquivalentSchema = new mongoose.Schema({
   primary_mpn: String,
   primary_description: String,
   primary_manufacturer: String,
+  primary_datasheet_url: String,
+  primary_reference_url: String,
   primary_specs: mongoose.Schema.Types.Mixed,
   equivalents: [{
     mpn: String,
@@ -19,7 +21,7 @@ const EquivalentSchema = new mongoose.Schema({
     compatibility: { type: Number, default: 1.0 },
     notes: String,
   }],
-  source: { type: String, enum: ['nexar', 'octopart', 'digikey', 'manual'], default: 'manual' },
+  source: { type: String, enum: ['nexar', 'alldatasheet', 'octopart', 'digikey', 'manual'], default: 'manual' },
   cached_at: { type: Date, default: Date.now },
   expires_at: { type: Date, default: () => new Date(Date.now() + EQUIVALENT_CACHE_TTL_MS) },
 }, { timestamps: true });
