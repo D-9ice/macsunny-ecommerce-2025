@@ -5,10 +5,7 @@ import { EquivalentModel, EQUIVALENT_CACHE_TTL_MS } from '@/app/lib/equivalents'
 import { cookies } from 'next/headers';
 
 function escapeRegex(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-');
 }
 
 function normalizePartKey(value: string) {
@@ -20,7 +17,6 @@ function lookupAliases(value: string) {
   if (/^[ABCDJK]\d+[A-Z0-9-]*$/.test(compact)) return [compact, '2S' + compact];
   return [compact];
 }
-
 async function appendLocalEquivalentMatches(results: any, equivalents: any[], searchTerm: string) {
   for (const equivalent of equivalents) {
     const mpn = String(equivalent.mpn || '').trim();
@@ -145,7 +141,6 @@ export async function POST(request: NextRequest) {
         cachedEquiv = null;
       }
     }
-
     if (cachedEquiv) {
       const cacheAgeDays = Math.floor(
         (Date.now() - cachedEquiv.cached_at.getTime()) / (24 * 60 * 60 * 1000)
