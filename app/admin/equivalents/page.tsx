@@ -6,6 +6,7 @@ interface Equivalent {
   _id: string;
   primary_sku: string;
   primary_name?: string;
+  primary_mpn?: string;
   primary_description?: string;
   primary_specs?: Record<string, string>;
   equivalents: Array<{
@@ -173,6 +174,11 @@ export default function EquivalentsManager() {
                 const specs = Object.entries(source.primary_specs || {}).slice(0, 8);
                 return (
                   <div>
+                    {source.primary_mpn && source.primary_sku && source.primary_mpn.toUpperCase() !== source.primary_sku.toUpperCase() && (
+                      <p className="mb-2 text-xs font-mono text-slate-400">
+                        Recognized as {source.primary_mpn}
+                      </p>
+                    )}
                     {source.primary_description && (
                       <p className="mb-3 text-sm leading-6 text-slate-300">{source.primary_description}</p>
                     )}
@@ -199,7 +205,9 @@ export default function EquivalentsManager() {
               })()}
 
               {(testResult.cached_equivalents?.equivalents || testResult.external_equivalents?.equivalents || []).length === 0 && (
-                <p className="text-slate-400">No matches found in inventory or component database.</p>
+                (testResult.cached_equivalents || testResult.external_equivalents)
+                  ? <p className="text-slate-400">Component identified. No equivalent alternatives are currently available from Nexar for this part.</p>
+                  : <p className="text-slate-400">No matching component or equivalent alternatives were found.</p>
               )}
             </div>
           )}
@@ -227,7 +235,14 @@ export default function EquivalentsManager() {
                 <div key={equiv._id} className="bg-gray-900 rounded-lg p-4">
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <h3 className="font-bold text-lg font-mono text-blue-300">{equiv.primary_sku}</h3>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-bold text-lg font-mono text-blue-300">{equiv.primary_sku}</h3>
+                        {equiv.primary_mpn && equiv.primary_mpn.toUpperCase() !== equiv.primary_sku.toUpperCase() && (
+                          <span className="rounded bg-slate-800 px-2 py-1 text-xs font-mono text-slate-300">
+                            {equiv.primary_mpn}
+                          </span>
+                        )}
+                      </div>
                       {(equiv.primary_description || equiv.primary_name) && (
                         <p className="mt-1 max-w-4xl text-sm leading-6 text-slate-300">
                           {equiv.primary_description || equiv.primary_name}
