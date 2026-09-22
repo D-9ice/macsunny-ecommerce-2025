@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB, ProductModel } from '@/app/lib/mongodb';
 import { isNexarConfigured, searchNexarEquivalents } from '@/app/lib/nexar';
-import { EquivalentModel, EQUIVALENT_EQUIVALENT_CACHE_TTL_MS } from '@/app/lib/equivalents';
+import { EquivalentModel, EQUIVALENT_CACHE_TTL_MS } from '@/app/lib/equivalents';
 import { cookies } from 'next/headers';
 
 function escapeRegex(value: string) {
