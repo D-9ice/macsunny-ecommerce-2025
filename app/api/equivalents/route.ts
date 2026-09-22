@@ -19,7 +19,7 @@ const EquivalentSchema = new mongoose.Schema({
     compatibility: { type: Number, default: 1.0 }, // 0.0-1.0
     notes: String,
   }],
-  source: { type: String, enum: ['octopart', 'digikey', 'manual'], default: 'manual' },
+  source: { type: String, enum: ['nexar', 'octopart', 'digikey', 'manual'], default: 'manual' },
   cached_at: { type: Date, default: Date.now },
   expires_at: { type: Date, default: () => new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) }, // 90 days
 }, { timestamps: true });
