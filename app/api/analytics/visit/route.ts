@@ -1,28 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MongoClient } from 'mongodb';
-
-const MONGODB_URI = process.env.MONGODB_URI || '';
-
-let cachedClient: MongoClient | null = null;
-
-async function getMongoClient() {
-  if (cachedClient) {
-    return cachedClient;
-  }
-  
-  const client = new MongoClient(MONGODB_URI);
-  await client.connect();
-  cachedClient = client;
-  return client;
-}
+import { getMongoDb } from '@/app/lib/mongodb';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { sessionId, page, timestamp, userAgent } = body;
 
-    const client = await getMongoClient();
-    const db = client.db('macsunny');
+    const db = await getMongoDb();
     const visits = db.collection('visits');
 
     // Get IP address from request headers
