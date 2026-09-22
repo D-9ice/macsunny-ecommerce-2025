@@ -29,10 +29,14 @@ export default function FrontierPromoAd() {
   const [open, setOpen] = useState(false);
   const [muted, setMuted] = useState(true);
   const [videoFailed, setVideoFailed] = useState(false);
+  const [videoBuffering, setVideoBuffering] = useState(false);
+  const [needsTapToPlay, setNeedsTapToPlay] = useState(false);
   const lastActivityRef = useRef(Date.now());
   const sessionStartRef = useRef(0);
   const initialTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const preloadVideoRef = useRef<HTMLVideoElement | null>(null);
+  const bufferingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const privateRoute =
     pathname === '/admin' ||
@@ -53,6 +57,35 @@ export default function FrontierPromoAd() {
     closePromo();
     window.open(FRONTIER_URL, '_blank', 'noopener,noreferrer');
   };
+
+  useEffect(() => {
+    if (privateRoute) return;
+
+    const connection = (navigator as Navigator & {
+      connection?: { saveData?: boolean; effectiveType?: string };
+    }).connection;
+
+    // Respect explicit data-saver mode. Otherwise start warming the small
+    // promo video before the 30-second popup so mobile does not begin from
+    // a cold network request when the dialog appears.
+    if (connection?.saveData) return;
+
+    const timer = window.setTimeout(() => {
+      const preloadVideo = document.createElement('video');
+      preloadVideo.preload = 'auto';
+      preloadVideo.muted = true;
+      preloadVideo.defaultMuted = true;
+      preloadVideo.playsInline = true;
+      preloadVideo.src = VIDEO_SRC;
+      preloadVideo.load();
+      preloadVideoRef.current = preloadVideo;
+    }, 8_000);
+
+    return () => {
+      window.clearTimeout(timer);
+      preloadVideoRef.current = null;
+    };
+  }, [privateRoute]);
 
   useEffect(() => {
     if (privateRoute) {
@@ -142,12 +175,29 @@ export default function FrontierPromoAd() {
     };
   }, [open]);
 
+  const attemptVideoPlay = async () => {
+    const video = videoRef.current;
+    if (!video || videoFailed) return;
+
+    video.muted = muted;
+    video.defaultMuted = muted;
+
+    try {
+      await video.play();
+      setNeedsTapToPlay(false);
+      setVideoBuffering(false);
+    } catch {
+      // Mobile browsers may still reject or interrupt autoplay even when
+      // muted. Give the visitor an explicit recovery action instead of a
+      // frozen frame.
+      setNeedsTapToPlay(true);
+    }
+  };
+
   useEffect(() => {
     if (!open || videoFailed || !videoRef.current) return;
-    videoRef.current.muted = muted;
-    void videoRef.current.play().catch(() => {
-      // The visual fallback remains fully usable if autoplay is blocked.
-    });
+    setVideoBuffering(true);
+    void attemptVideoPlay();
   }, [open, muted, videoFailed]);
 
   if (privateRoute || !open) return null;
@@ -194,10 +244,58 @@ export default function FrontierPromoAd() {
               autoPlay
               loop
               playsInline
-              preload="metadata"
-              onError={() => setVideoFailed(true)}
+              preload="auto"
+              controls={false}
+              disablePictureInPicture
+              onLoadStart={() => setVideoBuffering(true)}
+              onCanPlay={() => {
+                setVideoBuffering(false);
+                void attemptVideoPlay();
+              }}
+              onPlaying={() => {
+                setVideoBuffering(false);
+                setNeedsTapToPlay(false);
+                if (bufferingTimerRef.current) {
+                  clearTimeout(bufferingTimerRef.current);
+                  bufferingTimerRef.current = null;
+                }
+              }}
+              onWaiting={() => {
+                if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current);
+                bufferingTimerRef.current = setTimeout(() => setVideoBuffering(true), 700);
+              }}
+              onStalled={() => {
+                setVideoBuffering(true);
+                void attemptVideoPlay();
+              }}
+              onError={() => {
+                setVideoBuffering(false);
+                setVideoFailed(true);
+              }}
               className="h-full w-full object-cover"
             />
+
+            {(videoBuffering || needsTapToPlay) && (
+              <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-black/25">
+                {needsTapToPlay ? (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void attemptVideoPlay();
+                    }}
+                    className="pointer-events-auto rounded-full border border-white/25 bg-black/80 px-5 py-3 text-sm font-bold text-white shadow-xl backdrop-blur"
+                    aria-label="Play promotional video"
+                  >
+                    Tap to Play
+                  </button>
+                ) : (
+                  <div className="rounded-full border border-white/20 bg-black/65 px-4 py-2 text-xs font-semibold text-white backdrop-blur">
+                    Loading video…
+                  </div>
+                )}
+              </div>
+            )}
             <button
               type="button"
               onClick={(event) => {
