@@ -20,5 +20,9 @@ export async function GET() {
       'NEXAR_CLIENT_ID',
       'NEXAR_CLIENT_SECRET',
     ],
+    public_lookup_enabled: process.env.NEXAR_PUBLIC_LOOKUP_ENABLED === 'true',
+    optional_environment_variables: [
+      'NEXAR_PUBLIC_LOOKUP_ENABLED',
+    ],
   });
 }
