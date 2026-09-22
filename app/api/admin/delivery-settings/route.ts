@@ -1,21 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { MongoClient } from 'mongodb';
-
-const MONGODB_URI = process.env.MONGODB_URI || '';
-
-let cachedClient: MongoClient | null = null;
-
-async function getMongoClient() {
-  if (cachedClient) {
-    return cachedClient;
-  }
-
-  const client = new MongoClient(MONGODB_URI);
-  await client.connect();
-  cachedClient = client;
-  return client;
-}
+import { getMongoDb } from '@/app/lib/mongodb';
 
 // GET - Fetch delivery settings
 export async function GET(req: NextRequest) {
@@ -28,8 +13,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const client = await getMongoClient();
-    const db = client.db('macsunny');
+    const db = await getMongoDb();
     
     // Get settings from database
     const settings = await db.collection('delivery_settings').findOne({});
