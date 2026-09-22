@@ -5,7 +5,20 @@ import { EquivalentModel, EQUIVALENT_CACHE_TTL_MS } from '@/app/lib/equivalents'
 import { cookies } from 'next/headers';
 
 function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+');
+}
+
+function normalizePartKey(value: string) {
+  return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function lookupAliases(value: string) {
+  const compact = String(value || '').trim().toUpperCase().replace(/\s+/g, '');
+  if (/^[ABCDJK]\d+[A-Z0-9-]*$/.test(compact)) return [compact, '2S' + compact];
+  return [compact];
 }
 
 async function appendLocalEquivalentMatches(results: any, equivalents: any[], searchTerm: string) {
@@ -100,10 +113,17 @@ export async function POST(request: NextRequest) {
 
     results.found_in_inventory = localProducts.map((product: any) => ({
       sku: product.sku,
+      mpn: product.mpn || '',
       name: product.name,
       price: product.price,
+      quantity: product.quantity || 0,
       category: product.category,
-      image: product.image,
+      image: product.imageUrl || product.image || '',
+      description: product.description || '',
+      manufacturer: product.manufacturer || '',
+      package: product.package || '',
+      pinCount: product.pinCount || '',
+      specifications: product.specifications || [],
       in_stock: true,
       source: 'local',
     }));
@@ -111,10 +131,20 @@ export async function POST(request: NextRequest) {
     // STEP 2: Cached equivalents.
     results.strategy.push('cache_check');
 
-    const cachedEquiv = await EquivalentModel.findOne({
+    let cachedEquiv = await EquivalentModel.findOne({
       primary_sku: { $regex: new RegExp(`^${safeSearch}$`, 'i') },
       expires_at: { $gt: new Date() },
     });
+
+    if (cachedEquiv && cachedEquiv.source === 'nexar') {
+      const validKeys = new Set(lookupAliases(searchTerm).map(normalizePartKey));
+      const cachedKey = normalizePartKey(String(cachedEquiv.primary_mpn || cachedEquiv.primary_sku || ''));
+      if (!validKeys.has(cachedKey)) {
+        await EquivalentModel.deleteOne({ _id: cachedEquiv._id });
+        results.strategy.push('invalid_cache_removed');
+        cachedEquiv = null;
+      }
+    }
 
     if (cachedEquiv) {
       const cacheAgeDays = Math.floor(
