@@ -131,8 +131,10 @@ CRITICAL INSTRUCTIONS:
                   systemPrompt += '\n';
                 });
                 
-                if (equivSource.source === 'octopart') {
-                  systemPrompt += `\nSource: Octopart (verified component database)\n`;
+                if (equivSource.source === 'nexar') {
+                  systemPrompt += `\nSource: Nexar Supply API / Octopart supply data\n`;
+                } else if (equivSource.source === 'octopart') {
+                  systemPrompt += `\nSource: Legacy Octopart cache\n`;
                 }
               }
               
