@@ -40,6 +40,9 @@ type NexarGraphQlResponse = {
       results?: Array<{
         part?: {
           mpn?: string | null;
+          shortDescription?: string | null;
+          manufacturer?: { name?: string | null } | null;
+          specs?: NexarSpec[] | null;
           similarParts?: NexarSimilarPart[] | null;
         } | null;
       }> | null;
@@ -56,6 +59,16 @@ export type NexarEquivalent = {
   in_stock_external: boolean;
   distributor: string;
   price_info?: string;
+};
+
+export type NexarEquivalentSearchResult = {
+  source: {
+    mpn: string;
+    manufacturer: string;
+    description: string;
+    specs: Record<string, string>;
+  };
+  equivalents: NexarEquivalent[];
 };
 
 declare global {
@@ -144,6 +157,16 @@ const SIMILAR_PARTS_QUERY = `
       results {
         part {
           mpn
+          shortDescription
+          manufacturer {
+            name
+          }
+          specs {
+            attribute {
+              name
+            }
+            displayValue
+          }
           similarParts {
             mpn
             shortDescription
@@ -175,9 +198,14 @@ const SIMILAR_PARTS_QUERY = `
   }
 `;
 
-export async function searchNexarEquivalents(partNumber: string): Promise<NexarEquivalent[]> {
+export async function searchNexarEquivalents(partNumber: string): Promise<NexarEquivalentSearchResult> {
   const normalized = partNumber.trim();
-  if (!normalized) return [];
+  if (!normalized) {
+    return {
+      source: { mpn: '', manufacturer: '', description: '', specs: {} },
+      equivalents: [],
+    };
+  }
 
   const accessToken = await getNexarAccessToken();
 
@@ -240,5 +268,13 @@ export async function searchNexarEquivalents(partNumber: string): Promise<NexarE
     if (equivalents.length >= 10) break;
   }
 
-  return equivalents;
+  return {
+    source: {
+      mpn: sourcePart?.mpn?.trim() || normalized,
+      manufacturer: sourcePart?.manufacturer?.name?.trim() || '',
+      description: sourcePart?.shortDescription?.trim() || '',
+      specs: toSpecs(sourcePart?.specs),
+    },
+    equivalents,
+  };
 }
