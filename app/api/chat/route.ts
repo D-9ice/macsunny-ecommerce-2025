@@ -5,6 +5,30 @@ import { connectDB, ProductModel } from '@/app/lib/mongodb';
 const AI_MODEL = 'gpt-5.6-luna';
 const AI_PROVIDER = 'GPT-5.6 Luna';
 
+const EQUIVALENT_QUERY_STOP_WORDS = new Set([
+  'what', 'whats', 'which', 'find', 'show', 'give', 'need', 'want', 'have',
+  'equivalent', 'equivalents', 'alternative', 'alternatives', 'substitute',
+  'substitutes', 'similar', 'replace', 'replacement', 'instead', 'same',
+  'component', 'components', 'part', 'parts', 'please', 'for', 'with', 'like',
+]);
+
+function extractComponentToken(text: string) {
+  const tokens = text.match(/[A-Za-z0-9][A-Za-z0-9._+\/-]*/g) || [];
+  const partNumberCandidates = tokens.filter(
+    (token) => /\d/.test(token) && token.length >= 2
+  );
+
+  if (partNumberCandidates.length > 0) {
+    return partNumberCandidates.sort((a, b) => b.length - a.length)[0];
+  }
+
+  return (
+    tokens
+      .filter((token) => !EQUIVALENT_QUERY_STOP_WORDS.has(token.toLowerCase()))
+      .sort((a, b) => b.length - a.length)[0] || ''
+  );
+}
+
 export async function POST(req: Request) {
   try {
     const { messages, includeProductContext } = await req.json();
@@ -24,7 +48,8 @@ export async function POST(req: Request) {
     }
 
     // Detect if user is asking about products/components
-    const lastMessage = messages[messages.length - 1]?.content?.toLowerCase() || '';
+    const lastMessageRaw = String(messages[messages.length - 1]?.content || '');
+    const lastMessage = lastMessageRaw.toLowerCase();
     const isProductQuery = /do you have|in stock|available|price|cost|buy|purchase|mps|tda|lm|bc|ic|capacitor|resistor|transistor|diode/i.test(lastMessage);
     const isEquivalentQuery = /equivalent|alternative|substitute|similar|replace|instead of|like|same as/i.test(lastMessage);
     
@@ -85,11 +110,10 @@ CRITICAL INSTRUCTIONS:
         if (isEquivalentQuery) {
           contextType = 'equivalent_search';
           
-          // Extract component SKU/name from query
-          const skuMatch = lastMessage.match(/([a-z0-9]+[-_]?[a-z0-9]+)/gi);
-          
-          if (skuMatch && skuMatch.length > 0) {
-            const searchTerm = skuMatch[0];
+          // Prefer an actual part-number-like token instead of conversational words.
+          const searchTerm = extractComponentToken(lastMessageRaw);
+
+          if (searchTerm) {
             
             console.log(`🔍 AI Chat: Searching equivalents for "${searchTerm}"`);
             
