@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import AdminWorkspace from '@/app/admin/components/AdminWorkspace';
 
 interface Equivalent {
   _id: string;
@@ -101,21 +101,8 @@ export default function EquivalentsManager() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Component Equivalents Manager</h1>
-            <p className="text-gray-400">Manage component cross-references with Octopart integration</p>
-          </div>
-          <Link
-            href="/admin/dashboard"
-            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition"
-          >
-            ← Back to Dashboard
-          </Link>
-        </div>
+    <AdminWorkspace title="Component Equivalents" subtitle="Manage cached cross-references and external lookup">
+      <div className="space-y-6">
 
         {/* Configuration Status */}
         <div className={`mb-6 p-4 rounded-lg ${octopartConfigured ? 'bg-green-900/20 border border-green-500/30' : 'bg-yellow-900/20 border border-yellow-500/30'}`}>
@@ -126,7 +113,7 @@ export default function EquivalentsManager() {
                 {octopartConfigured ? 'Octopart API Configured' : 'Octopart API Not Configured'}
               </p>
               {!octopartConfigured && (
-                <p className="text-sm text-gray-400 mt-1">
+                <p className="text-sm text-slate-400 mt-1">
                   Set <code className="bg-gray-800 px-1 rounded">OCTOPART_API_KEY</code> environment variable to enable external component search
                 </p>
               )}
@@ -135,7 +122,7 @@ export default function EquivalentsManager() {
         </div>
 
         {/* Test Search */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-8">
+        <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6">
           <h2 className="text-xl font-bold mb-4">🔍 Test Component Search</h2>
           <form onSubmit={testSearch} className="flex gap-3 mb-4">
             <input
@@ -202,14 +189,14 @@ export default function EquivalentsManager() {
               )}
 
               {testResult.summary?.total_results === 0 && (
-                <p className="text-gray-400">No matches found in inventory or component database.</p>
+                <p className="text-slate-400">No matches found in inventory or component database.</p>
               )}
             </div>
           )}
         </div>
 
         {/* Cached Equivalents List */}
-        <div className="bg-gray-800 rounded-lg p-6">
+        <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">💾 Cached Equivalents ({equivalents.length})</h2>
             <button
@@ -221,9 +208,9 @@ export default function EquivalentsManager() {
           </div>
 
           {loading ? (
-            <p className="text-gray-400">Loading...</p>
+            <p className="text-slate-400">Loading...</p>
           ) : equivalents.length === 0 ? (
-            <p className="text-gray-400">No cached equivalents yet. Test a search above to populate the cache.</p>
+            <p className="text-slate-400">No cached equivalents yet. Test a search above to populate the cache.</p>
           ) : (
             <div className="space-y-3">
               {equivalents.map((equiv) => (
@@ -231,13 +218,13 @@ export default function EquivalentsManager() {
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <h3 className="font-bold text-lg font-mono text-blue-300">{equiv.primary_sku}</h3>
-                      {equiv.primary_name && <p className="text-sm text-gray-400">{equiv.primary_name}</p>}
+                      {equiv.primary_name && <p className="text-sm text-slate-400">{equiv.primary_name}</p>}
                     </div>
                     <div className="flex gap-2 items-center">
                       <span className="text-xs bg-purple-600 px-2 py-1 rounded">
                         {equiv.source}
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-slate-400">
                         {equiv.cache_age_days}d ago
                       </span>
                       <button
@@ -250,7 +237,7 @@ export default function EquivalentsManager() {
                   </div>
 
                   <div className="text-sm">
-                    <p className="text-gray-400 mb-1">Equivalents ({equiv.equivalents.length}):</p>
+                    <p className="text-slate-400 mb-1">Equivalents ({equiv.equivalents.length}):</p>
                     <div className="flex flex-wrap gap-2">
                       {equiv.equivalents.slice(0, 8).map((eq, i) => (
                         <span key={i} className="bg-gray-800 px-2 py-1 rounded text-xs">
@@ -271,7 +258,7 @@ export default function EquivalentsManager() {
         {/* Usage Info */}
         <div className="mt-8 bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
           <h3 className="font-bold mb-3">💡 How It Works</h3>
-          <ol className="list-decimal list-inside space-y-2 text-sm text-gray-300">
+          <ol className="list-decimal list-inside space-y-2 text-sm text-slate-300">
             <li>User searches for a component (via AI chat or direct search)</li>
             <li>System checks MacSunny local inventory first</li>
             <li>If no match, checks cached equivalents (90-day TTL)</li>
@@ -279,12 +266,12 @@ export default function EquivalentsManager() {
             <li>Results are cached for 90 days to reduce API calls by ~90%</li>
             <li>Future searches for the same component use cached data instantly</li>
           </ol>
-          <p className="mt-4 text-xs text-gray-400">
+          <p className="mt-4 text-xs text-slate-400">
             <strong>API Usage:</strong> Octopart free tier allows 1000 requests/month. 
             With caching, this supports ~30,000 searches/month for popular components.
           </p>
         </div>
       </div>
-    </div>
+    </AdminWorkspace>
   );
 }
