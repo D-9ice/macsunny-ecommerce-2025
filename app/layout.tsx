@@ -8,6 +8,7 @@ import { ReactQueryProvider } from './providers/ReactQueryProvider';
 import ToastContainer from './components/Toast';
 import VisitTracker from './components/VisitTracker';
 import ComplianceGate from './components/ComplianceGate';
+import FrontierPromoAd from './components/FrontierPromoAd';
 
 export const metadata: Metadata = {
   title: 'MacSunny Electronics — Quality Electronic Components & Accessories',
@@ -69,6 +70,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ThemeProvider>
             <VisitTracker />
             <ComplianceGate />
+            <FrontierPromoAd />
             <Navbar />
             <div className="site-content-shell mx-auto px-4 py-6">{children}</div>
             <Footer />
