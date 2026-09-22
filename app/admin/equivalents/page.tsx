@@ -153,7 +153,12 @@ export default function EquivalentsManager() {
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-xl">{testResult.success ? '✅' : '❌'}</span>
                 <p className="font-semibold">
-                  {testResult.summary?.total_results || 0} result(s) found
+                  {(() => {
+                    const localCount = testResult.found_in_inventory?.length || 0;
+                    const equivalentCount = (testResult.cached_equivalents?.equivalents || testResult.external_equivalents?.equivalents || []).length;
+                    const total = localCount + equivalentCount;
+                    return `${total} result${total === 1 ? '' : 's'} found`;
+                  })()}
                 </p>
                 {testResult.summary && (
                   <div className="ml-auto flex gap-2 text-xs">
@@ -195,7 +200,7 @@ export default function EquivalentsManager() {
                 </div>
               )}
 
-              {testResult.summary?.total_results === 0 && (
+              {((testResult.found_in_inventory?.length || 0) + (testResult.cached_equivalents?.equivalents || testResult.external_equivalents?.equivalents || []).length) === 0 && (
                 <p className="text-slate-400">No matches found in inventory or component database.</p>
               )}
             </div>
