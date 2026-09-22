@@ -1,5 +1,4 @@
 import './globals.css';
-import './lib/initDB';
 import type { Metadata, Viewport } from 'next';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
