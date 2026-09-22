@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import mongoose from 'mongoose';
 import os from 'os';
 import { connectDB, ProductModel, OrderModel, CategoryModel } from '@/app/lib/mongodb';
 
 export async function GET() {
+  if ((await cookies()).get('ms_admin')?.value !== '1') {
+    return NextResponse.json({ status: 'unauthorized' }, { status: 401 });
+  }
+
   try {
     // Try connecting to MongoDB (safe re-use if already connected)
     await connectDB();
@@ -28,15 +33,10 @@ export async function GET() {
     ]);
 
     // System info
-    const memoryUsage = `${(
-      process.memoryUsage().heapUsed /
-      1024 /
-      1024
-    ).toFixed(1)} MB`;
-
-    const dbUptime = `${Math.floor(process.uptime() / 60)}m ${Math.floor(
-      process.uptime() % 60
-    )}s`;
+    const memBytes = process.memoryUsage().heapUsed;
+    const dbUptimeSec = process.uptime();
+    const memoryUsage = `${(memBytes / 1024 / 1024).toFixed(1)} MB`;
+    const dbUptime = `${Math.floor(dbUptimeSec / 60)}m ${Math.floor(dbUptimeSec % 60)}s`;
 
     return NextResponse.json({
       status,
@@ -46,6 +46,8 @@ export async function GET() {
       environment: process.env.NODE_ENV || 'unknown',
       memoryUsage,
       dbUptime,
+      memBytes,
+      dbUptimeSec,
     });
   } catch (error: any) {
     console.error('❌ Failed to fetch DB status:', error.message);
