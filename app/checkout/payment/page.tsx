@@ -66,20 +66,24 @@ function PaymentContent() {
       },
       onSuccess: async (transaction: any) => {
         setProcessing(false);
-        // Update order with payment reference
         try {
-          await fetch('/api/orders', {
-            method: 'PUT',
+          const verifyResponse = await fetch('/api/payments/verify', {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               orderId,
-              paymentRef: transaction.reference,
-              paymentStatus: 'success',
-              status: 'processing',
+              reference: transaction.reference,
             }),
           });
+          const verification = await verifyResponse.json();
+          if (!verifyResponse.ok || !verification?.success) {
+            alert(verification?.message || 'Payment could not be verified. Please contact support.');
+            return;
+          }
         } catch (error) {
-          console.error('Failed to update order:', error);
+          console.error('Failed to verify payment:', error);
+          alert('Payment verification failed. Please contact support with your payment reference.');
+          return;
         }
         router.push(`/success?orderId=${orderId}&paymentRef=${transaction.reference}`);
       },
