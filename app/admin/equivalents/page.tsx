@@ -25,11 +25,11 @@ export default function EquivalentsManager() {
   const [testSKU, setTestSKU] = useState('');
   const [testResult, setTestResult] = useState<any>(null);
   const [testLoading, setTestLoading] = useState(false);
-  const [octopartConfigured, setOctopartConfigured] = useState(false);
+  const [nexarConfigured, setNexarConfigured] = useState(false);
 
   useEffect(() => {
     loadEquivalents();
-    checkOctopartConfig();
+    checkNexarConfig();
   }, []);
 
   const loadEquivalents = async () => {
@@ -48,13 +48,13 @@ export default function EquivalentsManager() {
     }
   };
 
-  const checkOctopartConfig = async () => {
+  const checkNexarConfig = async () => {
     try {
-      const res = await fetch('/api/equivalents/octopart');
+      const res = await fetch('/api/equivalents/nexar', { cache: 'no-store' });
       const data = await res.json();
-      setOctopartConfigured(data.configured);
+      setNexarConfigured(Boolean(data.configured));
     } catch (error) {
-      console.error('Failed to check Octopart config:', error);
+      console.error('Failed to check Nexar config:', error);
     }
   };
 
@@ -105,16 +105,16 @@ export default function EquivalentsManager() {
       <div className="space-y-6">
 
         {/* Configuration Status */}
-        <div className={`mb-6 p-4 rounded-lg ${octopartConfigured ? 'bg-green-900/20 border border-green-500/30' : 'bg-yellow-900/20 border border-yellow-500/30'}`}>
+        <div className={`mb-6 p-4 rounded-lg ${nexarConfigured ? 'bg-green-900/20 border border-green-500/30' : 'bg-yellow-900/20 border border-yellow-500/30'}`}>
           <div className="flex items-center gap-2">
-            <span className="text-xl">{octopartConfigured ? '✅' : '⚠️'}</span>
+            <span className="text-xl">{nexarConfigured ? '✅' : '⚠️'}</span>
             <div>
               <p className="font-semibold">
-                {octopartConfigured ? 'Octopart API Configured' : 'Octopart API Not Configured'}
+                {nexarConfigured ? 'Nexar Supply API Configured' : 'Nexar Supply API Not Configured'}
               </p>
-              {!octopartConfigured && (
+              {!nexarConfigured && (
                 <p className="text-sm text-slate-400 mt-1">
-                  Set <code className="bg-gray-800 px-1 rounded">OCTOPART_API_KEY</code> environment variable to enable external component search
+                  After creating the Nexar Supply application, set <code className="bg-gray-800 px-1 rounded">NEXAR_CLIENT_ID</code> and <code className="bg-gray-800 px-1 rounded">NEXAR_CLIENT_SECRET</code> in Vercel.
                 </p>
               )}
             </div>
@@ -262,13 +262,12 @@ export default function EquivalentsManager() {
             <li>User searches for a component (via AI chat or direct search)</li>
             <li>System checks MacSunny local inventory first</li>
             <li>If no match, checks cached equivalents (90-day TTL)</li>
-            <li>If cache miss, queries Octopart API for industry-standard equivalents</li>
+            <li>If cache miss, queries Nexar Supply GraphQL for similar parts from Octopart supply data</li>
             <li>Results are cached for 90 days to reduce API calls by ~90%</li>
             <li>Future searches for the same component use cached data instantly</li>
           </ol>
           <p className="mt-4 text-xs text-slate-400">
-            <strong>API Usage:</strong> Octopart free tier allows 1000 requests/month. 
-            With caching, this supports ~30,000 searches/month for popular components.
+            <strong>API Usage:</strong> Nexar supply plans are governed by matched-part limits. The 90-day cache minimizes repeated external lookups and preserves the available allowance.
           </p>
         </div>
       </div>
