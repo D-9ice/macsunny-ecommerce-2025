@@ -163,6 +163,7 @@ export default function FrontierPromoAd() {
         aria-labelledby="frontier-promo-title"
         className="relative w-full max-w-4xl overflow-hidden rounded-2xl border border-cyan-300/30 bg-[#050811] shadow-[0_30px_100px_rgba(0,0,0,.75)] sm:rounded-3xl"
       >
+        <h2 id="frontier-promo-title" className="sr-only">Frontier DevConsults promotional message</h2>
         <button
           type="button"
           onClick={closePromo}
@@ -228,9 +229,9 @@ export default function FrontierPromoAd() {
               </div>
 
               <div className="max-w-3xl">
-                <h2 id="frontier-promo-title" className="text-3xl font-black leading-tight text-white sm:text-5xl md:text-6xl">
+                <h3 className="text-3xl font-black leading-tight text-white sm:text-5xl md:text-6xl">
                   Building Digital Excellence
-                </h2>
+                </h3>
                 <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300 sm:text-lg">
                   Web Applications • AI Solutions • Business Platforms • Custom Engineering
                 </p>
