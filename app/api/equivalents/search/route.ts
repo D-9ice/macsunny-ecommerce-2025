@@ -123,6 +123,7 @@ export async function POST(request: NextRequest) {
 
       results.cached_equivalents = {
         primary_sku: cachedEquiv.primary_sku,
+        primary_mpn: cachedEquiv.primary_mpn || cachedEquiv.primary_sku,
         primary_description: cachedEquiv.primary_description || cachedEquiv.primary_name || '',
         primary_manufacturer: cachedEquiv.primary_manufacturer || '',
         primary_specs: cachedEquiv.primary_specs || {},
@@ -147,9 +148,10 @@ export async function POST(request: NextRequest) {
         const nexarResult = await searchNexarEquivalents(searchTerm);
         const equivalents = nexarResult.equivalents;
 
-        if (equivalents.length > 0) {
+        if (nexarResult.sourceFound) {
           results.external_equivalents = {
-            primary_sku: nexarResult.source.mpn || searchTerm,
+            primary_sku: searchTerm,
+            primary_mpn: nexarResult.source.mpn || nexarResult.resolvedQuery || searchTerm,
             primary_description: nexarResult.source.description || '',
             primary_manufacturer: nexarResult.source.manufacturer || '',
             primary_specs: nexarResult.source.specs || {},
@@ -158,14 +160,17 @@ export async function POST(request: NextRequest) {
             count: equivalents.length,
           };
 
-          // STEP 4: Cache Nexar results.
+          // STEP 4: Cache identified Nexar parts even when similarParts is empty.
+          // This prevents repeated allowance use for the same lookup and preserves
+          // technical data for storefront enrichment.
           results.strategy.push('cache_save');
 
           await EquivalentModel.findOneAndUpdate(
             { primary_sku: searchTerm },
             {
               primary_sku: searchTerm,
-              primary_name: nexarResult.source.description || searchTerm,
+              primary_mpn: nexarResult.source.mpn || nexarResult.resolvedQuery || searchTerm,
+              primary_name: nexarResult.source.description || nexarResult.source.mpn || searchTerm,
               primary_description: nexarResult.source.description || '',
               primary_manufacturer: nexarResult.source.manufacturer || '',
               primary_specs: nexarResult.source.specs || {},
@@ -186,7 +191,9 @@ export async function POST(request: NextRequest) {
           );
 
           // STEP 5: Surface equivalents already sold by MacSunny.
-          await appendLocalEquivalentMatches(results, equivalents, searchTerm);
+          if (equivalents.length > 0) {
+            await appendLocalEquivalentMatches(results, equivalents, searchTerm);
+          }
         }
       } catch (error: any) {
         console.error('Nexar equivalent search failed:', error);
