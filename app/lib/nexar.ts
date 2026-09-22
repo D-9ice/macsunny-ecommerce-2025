@@ -62,6 +62,8 @@ export type NexarEquivalent = {
 };
 
 export type NexarEquivalentSearchResult = {
+  sourceFound: boolean;
+  resolvedQuery: string;
   source: {
     mpn: string;
     manufacturer: string;
@@ -151,6 +153,20 @@ function stockSellers(sellers: NexarSeller[] | null | undefined) {
   return [...names];
 }
 
+function nexarLookupCandidates(partNumber: string) {
+  const normalized = partNumber.trim();
+  const compact = normalized.replace(/\s+/g, '').toUpperCase();
+
+  // Common Japanese JIS device markings omit the leading "2S":
+  // A1015 -> 2SA1015, B772 -> 2SB772, C945 -> 2SC945,
+  // D313 -> 2SD313, J/K prefixes likewise map to 2SJ/2SK.
+  if (/^[ABCDJK]\d+[A-Z0-9-]*$/.test(compact)) {
+    return [...new Set([`2S${compact}`, normalized])];
+  }
+
+  return [normalized];
+}
+
 const SIMILAR_PARTS_QUERY = `
   query MacSunnyEquivalentSearch($mpn: String!) {
     supSearchMpn(q: $mpn, limit: 1) {
@@ -202,40 +218,59 @@ export async function searchNexarEquivalents(partNumber: string): Promise<NexarE
   const normalized = partNumber.trim();
   if (!normalized) {
     return {
+      sourceFound: false,
+      resolvedQuery: '',
       source: { mpn: '', manufacturer: '', description: '', specs: {} },
       equivalents: [],
     };
   }
 
   const accessToken = await getNexarAccessToken();
+  let sourcePart: NexarGraphQlResponse['data'] extends infer D
+    ? D extends { supSearchMpn?: infer S }
+      ? S extends { results?: Array<infer R> | null }
+        ? R extends { part?: infer P }
+          ? P | null | undefined
+          : never
+        : never
+      : never
+    : never;
+  let resolvedQuery = normalized;
 
-  const response = await fetch(NEXAR_GRAPHQL_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'User-Agent': 'MacSunny-Electronics/1.0',
-    },
-    body: JSON.stringify({
-      query: SIMILAR_PARTS_QUERY,
-      variables: { mpn: normalized },
-    }),
-    cache: 'no-store',
-  });
+  for (const candidate of nexarLookupCandidates(normalized)) {
+    const response = await fetch(NEXAR_GRAPHQL_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'User-Agent': 'MacSunny-Electronics/1.0',
+      },
+      body: JSON.stringify({
+        query: SIMILAR_PARTS_QUERY,
+        variables: { mpn: candidate },
+      }),
+      cache: 'no-store',
+    });
 
-  const payload = (await response.json().catch(() => null)) as NexarGraphQlResponse | null;
+    const payload = (await response.json().catch(() => null)) as NexarGraphQlResponse | null;
 
-  if (!response.ok) {
-    throw new Error(`Nexar GraphQL request failed: HTTP ${response.status}`);
+    if (!response.ok) {
+      throw new Error(`Nexar GraphQL request failed: HTTP ${response.status}`);
+    }
+
+    if (payload?.errors?.length) {
+      const message = payload.errors.map((error) => error.message).filter(Boolean).join('; ');
+      throw new Error(`Nexar GraphQL error: ${message || 'Unknown error'}`);
+    }
+
+    const candidatePart = payload?.data?.supSearchMpn?.results?.[0]?.part;
+    if (candidatePart) {
+      sourcePart = candidatePart;
+      resolvedQuery = candidate;
+      break;
+    }
   }
-
-  if (payload?.errors?.length) {
-    const message = payload.errors.map((error) => error.message).filter(Boolean).join('; ');
-    throw new Error(`Nexar GraphQL error: ${message || 'Unknown error'}`);
-  }
-
-  const sourcePart = payload?.data?.supSearchMpn?.results?.[0]?.part;
   const sourceMpn = sourcePart?.mpn?.trim().toUpperCase();
   const dedupe = new Set<string>();
   const equivalents: NexarEquivalent[] = [];
@@ -269,8 +304,10 @@ export async function searchNexarEquivalents(partNumber: string): Promise<NexarE
   }
 
   return {
+    sourceFound: Boolean(sourcePart),
+    resolvedQuery,
     source: {
-      mpn: sourcePart?.mpn?.trim() || normalized,
+      mpn: sourcePart?.mpn?.trim() || resolvedQuery,
       manufacturer: sourcePart?.manufacturer?.name?.trim() || '',
       description: sourcePart?.shortDescription?.trim() || '',
       specs: toSpecs(sourcePart?.specs),
