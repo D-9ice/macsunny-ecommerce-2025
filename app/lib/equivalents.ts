@@ -5,6 +5,7 @@ export const EQUIVALENT_CACHE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const EquivalentSchema = new mongoose.Schema({
   primary_sku: { type: String, required: true, index: true },
   primary_name: String,
+  primary_mpn: String,
   primary_description: String,
   primary_manufacturer: String,
   primary_specs: mongoose.Schema.Types.Mixed,
