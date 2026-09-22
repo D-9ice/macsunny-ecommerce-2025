@@ -1,20 +1,5 @@
 import { NextResponse } from 'next/server';
-import { MongoClient } from 'mongodb';
-
-const MONGODB_URI = process.env.MONGODB_URI || '';
-
-let cachedClient: MongoClient | null = null;
-
-async function getMongoClient() {
-  if (cachedClient) {
-    return cachedClient;
-  }
-  
-  const client = new MongoClient(MONGODB_URI);
-  await client.connect();
-  cachedClient = client;
-  return client;
-}
+import { getMongoDb } from '@/app/lib/mongodb';
 
 export async function GET() {
   // Default empty stats
@@ -30,8 +15,7 @@ export async function GET() {
   };
 
   try {
-    const client = await getMongoClient();
-    const db = client.db('macsunny');
+    const db = await getMongoDb();
     const stats = db.collection('visit_stats');
     const visits = db.collection('visits');
 
