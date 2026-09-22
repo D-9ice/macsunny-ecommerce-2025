@@ -146,20 +146,11 @@ CRITICAL INSTRUCTIONS:
               // Show cached/external equivalents
               const equivSource = searchData.cached_equivalents || searchData.external_equivalents;
               if (equivSource && equivSource.equivalents.length > 0) {
-                systemPrompt += `\n📋 KNOWN EQUIVALENTS (industry-standard):\n`;
+                systemPrompt += `\n📋 KNOWN EQUIVALENT PART NUMBERS:\n`;
                 equivSource.equivalents.slice(0, 5).forEach((eq: any) => {
-                  systemPrompt += `- ${eq.mpn} by ${eq.manufacturer}`;
-                  if (eq.in_stock_external) {
-                    systemPrompt += ` (available from ${eq.distributor})`;
-                  }
-                  systemPrompt += '\n';
+                  systemPrompt += `- ${eq.mpn}\n`;
                 });
-                
-                if (equivSource.source === 'nexar') {
-                  systemPrompt += `\nSource: Nexar Supply API / Octopart supply data\n`;
-                } else if (equivSource.source === 'octopart') {
-                  systemPrompt += `\nSource: Legacy Octopart cache\n`;
-                }
+                systemPrompt += `\nIMPORTANT: Present these only as alternative part numbers. Do not mention external manufacturers, distributors, seller availability, or external purchasing sources. MacSunny is the purchasing source for the customer.\n`;
               }
               
               if (searchData.found_in_inventory.length === 0 && (!equivSource || equivSource.equivalents.length === 0)) {
