@@ -154,9 +154,7 @@ export default function EquivalentsManager() {
                 <span className="text-xl">{testResult.success ? '✅' : '❌'}</span>
                 <p className="font-semibold">
                   {(() => {
-                    const localCount = testResult.found_in_inventory?.length || 0;
-                    const equivalentCount = (testResult.cached_equivalents?.equivalents || testResult.external_equivalents?.equivalents || []).length;
-                    const total = localCount + equivalentCount;
+                    const total = (testResult.cached_equivalents?.equivalents || testResult.external_equivalents?.equivalents || []).length;
                     return `${total} result${total === 1 ? '' : 's'} found`;
                   })()}
                 </p>
@@ -168,39 +166,21 @@ export default function EquivalentsManager() {
                 )}
               </div>
 
-              {/* Local Inventory */}
-              {testResult.found_in_inventory?.length > 0 && (
-                <div className="mb-3">
-                  <p className="font-semibold text-green-400 mb-2">📦 In Stock:</p>
-                  <div className="space-y-1">
-                    {testResult.found_in_inventory.map((p: any, i: number) => (
-                      <div key={i} className="bg-gray-800 p-2 rounded">
-                        <span className="font-mono text-blue-300">{p.sku}</span>: {p.name} - GHS {p.price}
-                        {p.equivalent_of && <span className="text-yellow-400 ml-2">(alt. to {p.equivalent_of})</span>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* External Equivalents */}
+              {/* Equivalent part numbers only */}
               {(testResult.cached_equivalents || testResult.external_equivalents) && (
                 <div>
-                  <p className="font-semibold text-blue-400 mb-2">
-                    🔗 Known Equivalents:
-                  </p>
-                  <div className="space-y-1">
-                    {(testResult.cached_equivalents?.equivalents || testResult.external_equivalents?.equivalents || []).slice(0, 5).map((eq: any, i: number) => (
-                      <div key={i} className="bg-gray-800 p-2 rounded text-xs">
-                        <span className="font-mono text-blue-300">{eq.mpn}</span> by {eq.manufacturer}
-                        {eq.in_stock_external && <span className="text-green-400 ml-2">✓ Available ({eq.distributor})</span>}
-                      </div>
+                  <p className="mb-2 font-semibold text-blue-400">Equivalent Part Numbers</p>
+                  <div className="flex flex-wrap gap-2">
+                    {(testResult.cached_equivalents?.equivalents || testResult.external_equivalents?.equivalents || []).slice(0, 10).map((eq: any, i: number) => (
+                      <span key={i} className="rounded-lg bg-slate-800 px-3 py-2 font-mono text-sm font-semibold text-blue-200">
+                        {eq.mpn}
+                      </span>
                     ))}
                   </div>
                 </div>
               )}
 
-              {((testResult.found_in_inventory?.length || 0) + (testResult.cached_equivalents?.equivalents || testResult.external_equivalents?.equivalents || []).length) === 0 && (
+              {(testResult.cached_equivalents?.equivalents || testResult.external_equivalents?.equivalents || []).length === 0 && (
                 <p className="text-slate-400">No matches found in inventory or component database.</p>
               )}
             </div>
@@ -228,17 +208,8 @@ export default function EquivalentsManager() {
               {equivalents.map((equiv) => (
                 <div key={equiv._id} className="bg-gray-900 rounded-lg p-4">
                   <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className="font-bold text-lg font-mono text-blue-300">{equiv.primary_sku}</h3>
-                      {equiv.primary_name && <p className="text-sm text-slate-400">{equiv.primary_name}</p>}
-                    </div>
-                    <div className="flex gap-2 items-center">
-                      <span className="text-xs bg-purple-600 px-2 py-1 rounded">
-                        {equiv.source}
-                      </span>
-                      <span className="text-xs text-slate-400">
-                        {equiv.cache_age_days}d ago
-                      </span>
+                    <h3 className="font-bold text-lg font-mono text-blue-300">{equiv.primary_sku}</h3>
+                    <div className="flex items-center">
                       <button
                         onClick={() => deleteEquivalent(equiv.primary_sku)}
                         className="text-red-400 hover:text-red-300 text-xs"
@@ -265,22 +236,6 @@ export default function EquivalentsManager() {
               ))}
             </div>
           )}
-        </div>
-
-        {/* Usage Info */}
-        <div className="mt-8 bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
-          <h3 className="font-bold mb-3">💡 How It Works</h3>
-          <ol className="list-decimal list-inside space-y-2 text-sm text-slate-300">
-            <li>User searches for a component (via AI chat or direct search)</li>
-            <li>System checks MacSunny local inventory first</li>
-            <li>If no match, checks cached equivalents (90-day TTL)</li>
-            <li>If cache miss, queries Nexar Supply GraphQL for similar parts from Octopart supply data</li>
-            <li>Results are cached for 90 days to reduce API calls by ~90%</li>
-            <li>Future searches for the same component use cached data instantly</li>
-          </ol>
-          <p className="mt-4 text-xs text-slate-400">
-            <strong>API Usage:</strong> Nexar supply plans are governed by matched-part limits. The 90-day cache minimizes repeated external lookups and preserves the available allowance.
-          </p>
         </div>
       </div>
     </AdminWorkspace>
