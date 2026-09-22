@@ -32,12 +32,18 @@ function buildEquivalentTechnicalIndex(records: any[]) {
       : [];
 
     if (primary) {
-      index.set(primary, {
+      const primaryTechnical = {
         description: String(record.primary_description || record.primary_name || '').trim(),
         manufacturer: String(record.primary_manufacturer || '').trim(),
         specs: specsObjectToList(record.primary_specs),
         alternatives: equivalentMpns.filter((mpn: string) => normalizePartKey(mpn) !== primary).slice(0, 8),
-      });
+      };
+      index.set(primary, primaryTechnical);
+
+      const canonicalPrimary = normalizePartKey(record.primary_mpn);
+      if (canonicalPrimary && canonicalPrimary !== primary) {
+        index.set(canonicalPrimary, primaryTechnical);
+      }
     }
 
     for (const equivalent of record.equivalents || []) {
