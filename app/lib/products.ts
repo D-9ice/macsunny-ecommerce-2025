@@ -18,6 +18,7 @@ export type Product = {
   verificationSources?: Array<{ title: string; url: string; kind: string }>;
   verificationConfidence?: number;
   verificationStatus?: 'verified' | 'needs-review';
+  equivalentPartNumbers?: string[];
 };
 
 export const products: Product[] = [
