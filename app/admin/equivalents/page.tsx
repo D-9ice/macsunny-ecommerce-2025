@@ -112,16 +112,16 @@ export default function EquivalentsManager() {
             <span className="text-xl">{nexarConfigured ? '✅' : '⚠️'}</span>
             <div>
               <p className="font-semibold">
-                {nexarConfigured ? 'Nexar Supply API Configured' : 'Nexar Supply API Not Configured'}
+                {nexarConfigured ? 'External Component Lookup Connected' : 'External Component Lookup Not Connected'}
               </p>
               {!nexarConfigured && (
                 <p className="text-sm text-slate-400 mt-1">
-                  After creating the Nexar Supply application, set <code className="bg-gray-800 px-1 rounded">NEXAR_CLIENT_ID</code> and <code className="bg-gray-800 px-1 rounded">NEXAR_CLIENT_SECRET</code> in Vercel.
+                  Cached equivalents remain available. Complete the Nexar connection to enable live external component searches.
                 </p>
               )}
               {nexarConfigured && (
                 <p className="text-sm text-slate-400 mt-1">
-                  Public AI-triggered Nexar lookups are <strong>{publicLookupEnabled ? 'enabled' : 'disabled'}</strong>. Admin test searches remain allowed.
+                  Admin searches can use Nexar and the local cache. Customer live lookup is <strong>{publicLookupEnabled ? 'enabled' : 'disabled'}</strong>.
                 </p>
               )}
             </div>
