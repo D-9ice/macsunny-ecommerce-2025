@@ -34,17 +34,19 @@ type NexarSimilarPart = {
   } | null;
 };
 
+type NexarPart = {
+  mpn?: string | null;
+  shortDescription?: string | null;
+  manufacturer?: { name?: string | null } | null;
+  specs?: NexarSpec[] | null;
+  similarParts?: NexarSimilarPart[] | null;
+};
+
 type NexarGraphQlResponse = {
   data?: {
     supSearchMpn?: {
       results?: Array<{
-        part?: {
-          mpn?: string | null;
-          shortDescription?: string | null;
-          manufacturer?: { name?: string | null } | null;
-          specs?: NexarSpec[] | null;
-          similarParts?: NexarSimilarPart[] | null;
-        } | null;
+        part?: NexarPart | null;
       }> | null;
     } | null;
   };
@@ -226,15 +228,7 @@ export async function searchNexarEquivalents(partNumber: string): Promise<NexarE
   }
 
   const accessToken = await getNexarAccessToken();
-  let sourcePart: NexarGraphQlResponse['data'] extends infer D
-    ? D extends { supSearchMpn?: infer S }
-      ? S extends { results?: Array<infer R> | null }
-        ? R extends { part?: infer P }
-          ? P | null | undefined
-          : never
-        : never
-      : never
-    : never;
+  let sourcePart: NexarPart | null | undefined;
   let resolvedQuery = normalized;
 
   for (const candidate of nexarLookupCandidates(normalized)) {
