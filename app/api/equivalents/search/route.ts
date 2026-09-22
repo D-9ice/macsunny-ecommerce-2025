@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB, ProductModel } from '@/app/lib/mongodb';
 import { isNexarConfigured, searchNexarEquivalents } from '@/app/lib/nexar';
+import { allDatasheetReferenceUrl, isAllDatasheetConfigured, searchAllDatasheetPart } from '@/app/lib/alldatasheet';
 import { EquivalentModel, EQUIVALENT_CACHE_TTL_MS } from '@/app/lib/equivalents';
 import { cookies } from 'next/headers';
 
@@ -79,14 +80,23 @@ export async function POST(request: NextRequest) {
     const safeSearch = escapeRegex(searchTerm);
     const adminAuthenticated = (await cookies()).get('ms_admin')?.value === '1';
     const publicExternalEnabled = process.env.NEXAR_PUBLIC_LOOKUP_ENABLED === 'true';
+    const allDatasheetPublicEnabled = process.env.ALLDATASHEET_PUBLIC_LOOKUP_ENABLED === 'true';
     const externalLookupAllowed =
       isNexarConfigured() && (adminAuthenticated || publicExternalEnabled);
+    const allDatasheetLookupAllowed =
+      isAllDatasheetConfigured() && (adminAuthenticated || allDatasheetPublicEnabled);
 
     const results: any = {
       query: searchTerm,
       found_in_inventory: [],
       cached_equivalents: null,
       external_equivalents: null,
+      external_datasheet: null,
+      datasheet_reference: {
+        provider: 'AllDatasheet',
+        url: allDatasheetReferenceUrl(searchTerm),
+        api_configured: isAllDatasheetConfigured(),
+      },
       external_provider: {
         name: 'Nexar',
         configured: isNexarConfigured(),
@@ -151,6 +161,8 @@ export async function POST(request: NextRequest) {
         primary_mpn: cachedEquiv.primary_mpn || cachedEquiv.primary_sku,
         primary_description: cachedEquiv.primary_description || cachedEquiv.primary_name || '',
         primary_manufacturer: cachedEquiv.primary_manufacturer || '',
+        primary_datasheet_url: cachedEquiv.primary_datasheet_url || '',
+        primary_reference_url: cachedEquiv.primary_reference_url || '',
         primary_specs: cachedEquiv.primary_specs || {},
         equivalents: cachedEquiv.equivalents,
         source: cachedEquiv.source,
@@ -166,6 +178,7 @@ export async function POST(request: NextRequest) {
     }
 
     // STEP 3: Nexar external search only on cache miss.
+    let nexarSourceFound = false;
     if (!cachedEquiv && includeExternal && externalLookupAllowed) {
       results.strategy.push('nexar_api');
 
@@ -174,6 +187,7 @@ export async function POST(request: NextRequest) {
         const equivalents = nexarResult.equivalents;
 
         if (nexarResult.sourceFound) {
+          nexarSourceFound = true;
           results.external_equivalents = {
             primary_sku: searchTerm,
             primary_mpn: nexarResult.source.mpn || nexarResult.resolvedQuery || searchTerm,
@@ -226,17 +240,88 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // STEP 4: AllDatasheet technical/datasheet fallback.
+    // This provider complements Nexar for legacy parts. It does not scrape
+    // AllDatasheet pages and does not advertise external sellers.
+    const needsDatasheetFallback =
+      !cachedEquiv &&
+      includeExternal &&
+      allDatasheetLookupAllowed &&
+      (!nexarSourceFound || (results.external_equivalents?.equivalents || []).length === 0);
+
+    if (needsDatasheetFallback) {
+      results.strategy.push('alldatasheet_api');
+
+      try {
+        const allDatasheetResult = await searchAllDatasheetPart(searchTerm);
+
+        if (allDatasheetResult.found) {
+          results.external_datasheet = {
+            primary_sku: searchTerm,
+            primary_mpn: allDatasheetResult.mpn || searchTerm,
+            primary_description: allDatasheetResult.description || '',
+            primary_manufacturer: allDatasheetResult.manufacturer || '',
+            primary_specs: allDatasheetResult.specs || {},
+            primary_datasheet_url: allDatasheetResult.datasheetUrl || '',
+            primary_reference_url: allDatasheetResult.referenceUrl,
+            source: 'alldatasheet',
+          };
+
+          const existingExternal = results.external_equivalents;
+          if (existingExternal) {
+            await EquivalentModel.findOneAndUpdate(
+              { primary_sku: searchTerm },
+              {
+                $set: {
+                  primary_datasheet_url: allDatasheetResult.datasheetUrl || '',
+                  primary_reference_url: allDatasheetResult.referenceUrl,
+                },
+              },
+              { new: true }
+            );
+          } else {
+            await EquivalentModel.findOneAndUpdate(
+              { primary_sku: searchTerm },
+              {
+                primary_sku: searchTerm,
+                primary_mpn: allDatasheetResult.mpn || searchTerm,
+                primary_name: allDatasheetResult.description || allDatasheetResult.mpn || searchTerm,
+                primary_description: allDatasheetResult.description || '',
+                primary_manufacturer: allDatasheetResult.manufacturer || '',
+                primary_datasheet_url: allDatasheetResult.datasheetUrl || '',
+                primary_reference_url: allDatasheetResult.referenceUrl,
+                primary_specs: allDatasheetResult.specs || {},
+                equivalents: [],
+                source: 'alldatasheet',
+                cached_at: new Date(),
+                expires_at: new Date(Date.now() + EQUIVALENT_CACHE_TTL_MS),
+              },
+              { upsert: true, new: true }
+            );
+            results.strategy.push('cache_save');
+          }
+        }
+      } catch (error: any) {
+        console.error('AllDatasheet lookup failed:', error);
+        results.alldatasheet_error = error?.message || 'AllDatasheet lookup failed';
+      }
+    }
+
     const summary = {
       total_results: results.found_in_inventory.length,
       has_local_stock: results.found_in_inventory.length > 0,
       has_cached_data: Boolean(results.cached_equivalents),
       has_external_data: Boolean(results.external_equivalents),
       cache_used: Boolean(results.cached_equivalents),
-      api_called: results.strategy.includes('nexar_api'),
-      external_configured: isNexarConfigured(),
-      external_lookup_allowed: externalLookupAllowed,
-      public_external_lookup_enabled: publicExternalEnabled,
-      external_provider: 'nexar',
+      api_called: results.strategy.includes('nexar_api') || results.strategy.includes('alldatasheet_api'),
+      nexar_api_called: results.strategy.includes('nexar_api'),
+      alldatasheet_api_called: results.strategy.includes('alldatasheet_api'),
+      external_configured: isNexarConfigured() || isAllDatasheetConfigured(),
+      external_lookup_allowed: externalLookupAllowed || allDatasheetLookupAllowed,
+      public_external_lookup_enabled: publicExternalEnabled || allDatasheetPublicEnabled,
+      nexar_configured: isNexarConfigured(),
+      alldatasheet_configured: isAllDatasheetConfigured(),
+      external_provider: 'nexar+alldatasheet',
     };
 
     return NextResponse.json({
@@ -257,8 +342,11 @@ export async function GET() {
   return NextResponse.json({
     success: true,
     info: 'POST with { "query": "COMPONENT_SKU" } to search for equivalents',
-    provider: 'nexar',
+    provider: 'nexar+alldatasheet',
     nexar_configured: isNexarConfigured(),
-    public_lookup_enabled: process.env.NEXAR_PUBLIC_LOOKUP_ENABLED === 'true',
+    alldatasheet_configured: isAllDatasheetConfigured(),
+    public_lookup_enabled:
+      process.env.NEXAR_PUBLIC_LOOKUP_ENABLED === 'true' ||
+      process.env.ALLDATASHEET_PUBLIC_LOOKUP_ENABLED === 'true',
   });
 }
