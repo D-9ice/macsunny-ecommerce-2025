@@ -32,7 +32,7 @@ export default function EquivalentsManager() {
   const [testResult, setTestResult] = useState<any>(null);
   const [testLoading, setTestLoading] = useState(false);
   const [nexarConfigured, setNexarConfigured] = useState(false);
-  const [allDatasheetConfigured, setAllDatasheetConfigured] = useState(false);
+  const [mouserConfigured, setMouserConfigured] = useState(false);
   const [publicLookupEnabled, setPublicLookupEnabled] = useState(false);
 
   useEffect(() => {
@@ -58,15 +58,15 @@ export default function EquivalentsManager() {
 
   const checkProviderConfig = async () => {
     try {
-      const [nexarRes, allDatasheetRes] = await Promise.all([
+      const [nexarRes, mouserRes] = await Promise.all([
         fetch('/api/equivalents/nexar', { cache: 'no-store' }),
-        fetch('/api/equivalents/alldatasheet', { cache: 'no-store' }),
+        fetch('/api/equivalents/mouser', { cache: 'no-store' }),
       ]);
       const nexar = await nexarRes.json();
-      const allDatasheet = await allDatasheetRes.json();
+      const mouser = await mouserRes.json();
       setNexarConfigured(Boolean(nexar.configured));
-      setAllDatasheetConfigured(Boolean(allDatasheet.configured));
-      setPublicLookupEnabled(Boolean(nexar.public_lookup_enabled || allDatasheet.public_lookup_enabled));
+      setMouserConfigured(Boolean(mouser.configured));
+      setPublicLookupEnabled(Boolean(nexar.public_lookup_enabled || mouser.public_lookup_enabled));
     } catch (error) {
       console.error('Failed to check external provider config:', error);
     }
@@ -119,22 +119,22 @@ export default function EquivalentsManager() {
       <div className="space-y-6">
 
         {/* Configuration Status */}
-        <div className={`mb-6 rounded-lg border p-4 ${nexarConfigured ? 'border-green-500/30 bg-green-900/20' : 'border-yellow-500/30 bg-yellow-900/20'}`}>
+        <div className={`mb-6 rounded-lg border p-4 ${(nexarConfigured || mouserConfigured) ? 'border-green-500/30 bg-green-900/20' : 'border-yellow-500/30 bg-yellow-900/20'}`}>
           <div className="flex items-start gap-2">
-            <span className="text-xl">{nexarConfigured ? '✅' : '⚠️'}</span>
+            <span className="text-xl">{(nexarConfigured || mouserConfigured) ? '✅' : '⚠️'}</span>
             <div>
               <p className="font-semibold">
-                {nexarConfigured ? 'External Component Lookup Connected' : 'External Component Lookup Partially Connected'}
+                {(nexarConfigured || mouserConfigured) ? 'External Component Lookup Connected' : 'External Component Lookup Not Connected'}
               </p>
               <p className="mt-1 text-sm text-slate-400">
                 Nexar: <strong>{nexarConfigured ? 'connected' : 'not connected'}</strong>
                 {' • '}
-                AllDatasheet fallback: <strong>{allDatasheetConfigured ? 'connected' : 'API-ready, registration pending'}</strong>
+                Mouser fallback: <strong>{mouserConfigured ? 'connected' : 'adapter ready — API key pending'}</strong>
                 {' • '}
                 Customer live lookup is <strong>{publicLookupEnabled ? 'enabled' : 'disabled'}</strong>.
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                AllDatasheet direct datasheet references are available even before API activation.
+                AllDatasheet is retained only as a manual legacy-component reference because its API service has been discontinued.
               </p>
             </div>
           </div>
@@ -217,8 +217,8 @@ export default function EquivalentsManager() {
                 </div>
               )}
 
-              {(testResult.cached_equivalents || testResult.external_equivalents || testResult.external_datasheet) && (() => {
-                const source = testResult.cached_equivalents || testResult.external_equivalents || testResult.external_datasheet;
+              {(testResult.cached_equivalents || testResult.external_equivalents) && (() => {
+                const source = testResult.cached_equivalents || testResult.external_equivalents;
                 const specs = Object.entries(source.primary_specs || {}).slice(0, 8);
                 return (
                   <div>
@@ -230,16 +230,18 @@ export default function EquivalentsManager() {
                     {source.primary_description && (
                       <p className="mb-3 text-sm leading-6 text-slate-300">{source.primary_description}</p>
                     )}
-                    {(source.primary_datasheet_url || source.primary_reference_url || testResult.datasheet_reference?.url) && (
+                    {(source.primary_datasheet_url || source.primary_reference_url) && (
                       <div className="mb-3 flex flex-wrap gap-2">
                         {source.primary_datasheet_url && (
                           <a href={source.primary_datasheet_url} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500">
                             Open Datasheet
                           </a>
                         )}
-                        <a href={source.primary_reference_url || testResult.datasheet_reference?.url} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-slate-700 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-600">
-                          AllDatasheet Reference
-                        </a>
+                        {source.primary_reference_url && (
+                          <a href={source.primary_reference_url} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-slate-700 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-600">
+                            Provider Reference
+                          </a>
+                        )}
                       </div>
                     )}
                     {specs.length > 0 && (
@@ -267,15 +269,18 @@ export default function EquivalentsManager() {
               {(testResult.cached_equivalents?.equivalents || testResult.external_equivalents?.equivalents || []).length === 0 && (
                 testResult.found_in_inventory?.length > 0
                   ? <p className="text-slate-400">MacSunny has this component in inventory. No equivalent alternatives are currently available from the connected reference providers.</p>
-                  : (testResult.cached_equivalents || testResult.external_equivalents || testResult.external_datasheet)
+                  : (testResult.cached_equivalents || testResult.external_equivalents)
                     ? <p className="text-slate-400">Component identified. No equivalent alternatives are currently available from the connected reference providers.</p>
                     : <div className="flex flex-wrap items-center gap-2 text-slate-400">
                         <span>No matching component or equivalent alternatives were found.</span>
-                        {testResult.datasheet_reference?.url && (
-                          <a href={testResult.datasheet_reference.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-300 hover:text-blue-200">
-                            Check AllDatasheet reference
-                          </a>
-                        )}
+                        <a
+                          href={'https://www.alldatasheet.net/view.jsp?Searchword=' + encodeURIComponent(testSKU.trim())}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-blue-300 hover:text-blue-200"
+                        >
+                          Search AllDatasheet manually
+                        </a>
                       </div>
               )}
             </div>
@@ -337,7 +342,7 @@ export default function EquivalentsManager() {
                       )}
                       {equiv.primary_reference_url && (
                         <a href={equiv.primary_reference_url} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-slate-700 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-600">
-                          AllDatasheet Reference
+                          Provider Reference
                         </a>
                       )}
                     </div>
