@@ -1,17 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMongoDb } from '@/app/lib/mongodb';
+import { rateAllowed, readBoundedJson, requestIp, sameOrigin } from '@/app/lib/requestSecurity';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { sessionId, page, timestamp, userAgent } = body;
+    if (!sameOrigin(req)) {
+      return NextResponse.json({ success: false, error: 'Unexpected request origin' }, { status: 403 });
+    }
+    if (!rateAllowed(req, 'analytics', 90, 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many analytics requests' }, { status: 429 });
+    }
+
+    const parsed = await readBoundedJson(req, 8 * 1024);
+    if (!parsed.ok) {
+      return NextResponse.json({ success: false, error: parsed.message }, { status: parsed.status });
+    }
+
+    const sessionId = String(parsed.value?.sessionId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 128);
+    const page = String(parsed.value?.page || '').trim().slice(0, 200);
+    if (!sessionId || !page.startsWith('/')) {
+      return NextResponse.json({ success: false, error: 'Invalid analytics event' }, { status: 400 });
+    }
+
+    const pageKey = page.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 160) || 'root';
+    const now = new Date();
+    const userAgent = String(req.headers.get('user-agent') || '').slice(0, 300);
+    const ipAddress = requestIp(req);
 
     const db = await getMongoDb();
     const visits = db.collection('visits');
-
-    // Get IP address from request headers
-    const forwardedFor = req.headers.get('x-forwarded-for');
-    const ipAddress = forwardedFor ? forwardedFor.split(',')[0] : 'unknown';
 
     // Check if this session already exists
     const existingSession = await visits.findOne({ sessionId });
@@ -22,7 +39,7 @@ export async function POST(req: NextRequest) {
         { sessionId },
         {
           $set: {
-            lastVisit: new Date(timestamp),
+            lastVisit: now,
           },
           $inc: { pageViews: 1 },
           $addToSet: { pages: page },
@@ -34,8 +51,8 @@ export async function POST(req: NextRequest) {
         sessionId,
         ipAddress,
         userAgent,
-        firstVisit: new Date(timestamp),
-        lastVisit: new Date(timestamp),
+        firstVisit: now,
+        lastVisit: now,
         pageViews: 1,
         pages: [page],
       });
@@ -50,7 +67,7 @@ export async function POST(req: NextRequest) {
       {
         $inc: {
           totalVisits: 1,
-          [`pageViews.${page}`]: 1,
+          [`pageViews.${pageKey}`]: 1,
         },
         $addToSet: {
           uniqueVisitors: sessionId,
