@@ -9,144 +9,109 @@ User query
   → MacSunny local inventory
   → 90-day MongoDB equivalent/technical cache
   → Nexar Supply GraphQL
-  → AllDatasheet technical/datasheet fallback
-  → cache validated technical data
+  → Mouser Search API V2 fallback
+  → cache verified technical data/replacements
   → re-check returned alternatives against MacSunny inventory
 ```
 
-Nexar remains the structured source for `similarParts`. AllDatasheet complements it for legacy/older component identification and datasheet references. External seller/distributor advertising is not surfaced to MacSunny customers.
+AllDatasheet is retained only as a manual research link for legacy parts because AllDatasheet confirmed by email on 2026-09-23 that it no longer offers an API service.
 
-## Nexar environment variables
+## Environment variables
+
+### Nexar
 
 ```bash
 NEXAR_CLIENT_ID=...
 NEXAR_CLIENT_SECRET=...
-# Optional. Leave unset/false during evaluation testing:
 NEXAR_PUBLIC_LOOKUP_ENABLED=false
 ```
 
-## AllDatasheet environment variables
-
-The runtime adapter is already implemented. Do not guess the private API contract before registration. After AllDatasheet issues the official API key/endpoint details, configure:
+### Mouser
 
 ```bash
-ALLDATASHEET_API_KEY=...
-ALLDATASHEET_API_URL_TEMPLATE=...
-# Optional. Leave unset/false until intentionally enabled:
-ALLDATASHEET_PUBLIC_LOOKUP_ENABLED=false
+MOUSER_API_KEY=...
+MOUSER_PUBLIC_LOOKUP_ENABLED=false
 ```
 
-`ALLDATASHEET_API_URL_TEMPLATE` supports placeholders so the official contract can be applied without another code rewrite:
-
-- `{part}` or `{query}` — component part number
-- `{key}` — API key when the provider requires it in the URL
-
-Optional compatibility variables are also supported if the issued API contract uses named query parameters or a request header:
-
-```bash
-ALLDATASHEET_API_KEY_HEADER=...
-ALLDATASHEET_API_KEY_PARAM=...
-ALLDATASHEET_API_QUERY_PARAM=...
-```
-
-If no API credentials are configured, MacSunny still exposes the official AllDatasheet distributor-style direct datasheet-reference link. It does not scrape AllDatasheet HTML.
-
-Do not expose any credential through `NEXT_PUBLIC_*` variables or client-side code.
+Do not expose provider credentials through `NEXT_PUBLIC_*` variables or client-side code.
 
 ## Provider behavior
 
 ### Nexar
 
-MacSunny is wired for:
-
 - OAuth 2.0 client credentials
-- Token URL: `https://identity.nexar.com/connect/token`
-- Scope: `supply.domain`
-- GraphQL endpoint: `https://api.nexar.com/graphql`
-- Exact normalized MPN validation to reject false partial matches
+- Supply GraphQL
+- exact normalized MPN validation
 - `supSearchMpn` + `similarParts`
 - server-side token caching
 
+### Mouser
+
+MacSunny is wired to the official Search API V2:
+
+- Base host: `https://api.mouser.com`
+- Endpoint: `POST /api/v2/search/partnumberandmanufacturer`
+- API key: query parameter `apiKey`
+- request mode: exact part-number search
+- manufacturer MPN is used for cross-reference matching
+- technical fields are derived from `ProductAttributes`
+- datasheet URL, image URL, lifecycle status, description, manufacturer and product reference are retained
+- `SuggestedReplacement` is used as the replacement/equivalent source when present
+- JIS shorthand such as `D313` can also try canonical `2SD313`
+- public/customer Mouser lookup remains disabled unless explicitly enabled
+
+Official published Search API limits currently include up to 50 results per call, 30 calls per minute and 1,000 calls per day.
+
 ### AllDatasheet
 
-MacSunny is wired for:
-
-- official direct datasheet-reference links through `alldatasheet.net`
-- server-side API-key adapter once the official membership/API contract is issued
-- exact part-number validation when the API response exposes an MPN/part-number field
-- technical description/specification/datasheet fields only
-- no HTML scraping
-- no external seller/distributor presentation
-- fallback caching with `source: "alldatasheet"`
+- no automated API integration
+- no scraping
+- manual legacy-component reference link only
 
 ## Relevant routes
 
-- `/api/equivalents/search` — local inventory + cache + Nexar + AllDatasheet fallback
+- `/api/equivalents/search` — local inventory + cache + Nexar + Mouser fallback
 - `/api/equivalents` — authenticated admin cache management
 - `/api/equivalents/nexar` — authenticated Nexar status
-- `/api/equivalents/alldatasheet` — authenticated AllDatasheet status
+- `/api/equivalents/mouser` — authenticated Mouser status
+- `/api/image-search` — reuses the same Mouser V2 adapter for component images
 - `/api/chat` — AI assistant equivalent/alternative integration
 - `/admin/equivalents` — admin lookup/cache workspace
 
 ## Cache behavior
 
-External validated records are stored in MongoDB for 90 days.
+Validated external records are cached for 90 days.
 
-Supported cache sources include:
+Supported cache sources:
 
 ```text
 nexar
-alldatasheet
+mouser
 octopart
 digikey
 manual
 ```
 
-Legacy cache sources remain readable for backward compatibility.
+MacSunny inventory remains authoritative for price, stock, product image and sale.
 
-Cached records may retain:
+## Mouser activation checklist
 
-- canonical MPN
-- technical description
-- manufacturer
-- technical specifications
-- datasheet URL
-- AllDatasheet reference URL
-- equivalent part numbers
-
-MacSunny inventory data remains authoritative for price, stock, product image, and sale.
-
-## Admin validation after AllDatasheet registration
-
-1. Add the issued AllDatasheet API key and official endpoint template to Vercel.
-2. Keep customer/public lookup disabled.
-3. Redeploy production.
-4. Open `/admin/equivalents`.
-5. Confirm the AllDatasheet fallback reports **connected**.
-6. Search a legacy component that Nexar does not identify.
-7. Confirm the AllDatasheet API is called only after local/cache/Nexar lookup.
-8. Confirm technical/datasheet information is cached.
-9. Search the same part again and verify the cache is used instead of another external call.
+1. Create/sign in to a My Mouser account.
+2. Submit the official Search API request form.
+3. Receive the Search API key from Mouser.
+4. Add `MOUSER_API_KEY` to Vercel Production.
+5. Leave `MOUSER_PUBLIC_LOOKUP_ENABLED=false`.
+6. Redeploy.
+7. Open `/admin/equivalents`.
+8. Confirm **Mouser fallback: connected**.
+9. Test a legacy part Nexar misses, such as TIP41.
+10. Confirm the first search calls Mouser and the second uses the 90-day cache.
 
 ## Security
 
-- All external credentials remain server-side only.
-- Provider configuration status is admin-only.
-- External credentials are never returned to the browser.
-- Public external lookup is disabled by default for both providers.
-- AllDatasheet HTML is never scraped.
-- Do not commit API credentials to Git.
-
-## Troubleshooting
-
-**Nexar returns no part**
-
-The lookup continues to AllDatasheet when its API is configured. The official AllDatasheet reference link remains available even before API activation.
-
-**AllDatasheet API not connected**
-
-This is expected until membership/API registration is completed. The adapter is already deployed and waiting for the issued API contract.
-
-**AllDatasheet response format differs from the generic adapter**
-
-Use the official endpoint/key details issued during registration. The URL-template/header/query configuration covers the common contract shapes; if the issued payload schema is materially different, adjust only `app/lib/alldatasheet.ts`, not the overall search architecture.
+- provider credentials are server-side only
+- provider status routes are admin-only
+- public external lookup is disabled by default
+- exact MPN validation is used to reduce false matches
+- no external seller/distributor information is presented as MacSunny inventory
+- never commit API credentials to Git
