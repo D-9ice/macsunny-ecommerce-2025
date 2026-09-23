@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import AdminWorkspace from '@/app/admin/components/AdminWorkspace';
 
 interface Equivalent {
@@ -33,7 +34,6 @@ export default function EquivalentsManager() {
   const [testLoading, setTestLoading] = useState(false);
   const [nexarConfigured, setNexarConfigured] = useState(false);
   const [mouserConfigured, setMouserConfigured] = useState(false);
-  const [publicLookupEnabled, setPublicLookupEnabled] = useState(false);
 
   useEffect(() => {
     loadEquivalents();
@@ -66,7 +66,6 @@ export default function EquivalentsManager() {
       const mouser = await mouserRes.json();
       setNexarConfigured(Boolean(nexar.configured));
       setMouserConfigured(Boolean(mouser.configured));
-      setPublicLookupEnabled(Boolean(nexar.public_lookup_enabled || mouser.public_lookup_enabled));
     } catch (error) {
       console.error('Failed to check external provider config:', error);
     }
@@ -118,23 +117,30 @@ export default function EquivalentsManager() {
     <AdminWorkspace title="Component Equivalents" subtitle="Manage cached cross-references and external lookup">
       <div className="space-y-6">
 
-        {/* Configuration Status */}
+        {/* Plain-language search readiness */}
         <div className={`mb-6 rounded-lg border p-4 ${(nexarConfigured || mouserConfigured) ? 'border-green-500/30 bg-green-900/20' : 'border-yellow-500/30 bg-yellow-900/20'}`}>
           <div className="flex items-start gap-2">
             <span className="text-xl">{(nexarConfigured || mouserConfigured) ? '✅' : '⚠️'}</span>
             <div>
               <p className="font-semibold">
-                {(nexarConfigured || mouserConfigured) ? 'External Component Lookup Connected' : 'External Component Lookup Not Connected'}
+                {(nexarConfigured || mouserConfigured) ? 'Component Search Ready' : 'Component Search Needs Attention'}
               </p>
-              <p className="mt-1 text-sm text-slate-400">
-                Nexar: <strong>{nexarConfigured ? 'connected' : 'not connected'}</strong>
-                {' • '}
-                Mouser fallback: <strong>{mouserConfigured ? 'connected' : 'adapter ready — API key pending'}</strong>
-                {' • '}
-                Customer live lookup is <strong>{publicLookupEnabled ? 'enabled' : 'disabled'}</strong>.
+              <p className="mt-1 text-sm text-slate-300">
+                Search MacSunny inventory and external component references below.
               </p>
-              <p className="mt-1 text-xs text-slate-500">
-                Manual research links are available below for AllDatasheet, Mouser, DigiKey, and Octopart. AllDatasheet remains legacy-reference only because its API service has been discontinued.
+              <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                <span className={`rounded-full border px-2.5 py-1 ${nexarConfigured ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200' : 'border-amber-500/30 bg-amber-500/10 text-amber-200'}`}>
+                  Nexar • Paid service • {nexarConfigured ? 'Available' : 'Needs attention'}
+                </span>
+                <span className={`rounded-full border px-2.5 py-1 ${mouserConfigured ? 'border-blue-500/30 bg-blue-500/10 text-blue-200' : 'border-slate-600 bg-slate-800 text-slate-300'}`}>
+                  Mouser • {mouserConfigured ? 'Available' : 'Access pending'}
+                </span>
+              </div>
+              <p className="mt-2 text-xs text-slate-500">
+                Billing and renewal details are tracked under{' '}
+                <Link href="/admin/services-renewals" className="font-semibold text-amber-300 hover:text-amber-200">
+                  Services & Renewals
+                </Link>.
               </p>
             </div>
           </div>
