@@ -1,9 +1,8 @@
-import { cookies } from 'next/headers';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 import { redirect } from 'next/navigation';
 
 export default async function AdminPage() {
-  const cookieStore = await cookies();
-  const isAuthenticated = cookieStore.get('ms_admin')?.value === '1';
+  const isAuthenticated = await isAdminAuthenticated();
 
   if (isAuthenticated) {
     redirect('/admin/dashboard');
