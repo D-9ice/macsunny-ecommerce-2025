@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { connectDB, ProductModel } from '@/app/lib/mongodb';
 import { deleteBlobSafely, uploadProductWebp } from '@/lib/images';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 
 export const runtime = 'nodejs';
 
@@ -42,7 +43,7 @@ async function downloadImage(rawUrl: string, sourceUrl = '') {
 
 export async function POST(request: Request) {
   const requestId = crypto.randomUUID();
-  if ((await cookies()).get('ms_admin')?.value !== '1') return NextResponse.json({ success: false, message: 'Unauthorized', requestId }, { status: 401 });
+  if (!(await isAdminAuthenticated())) return NextResponse.json({ success: false, message: 'Unauthorized', requestId }, { status: 401 });
   let newlyUploaded: string | null = null;
   let remoteFallback: { sku: string; url: string; sourceUrl: string; alt: string } | null = null;
   try {
