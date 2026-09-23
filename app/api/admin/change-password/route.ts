@@ -3,11 +3,12 @@ import { cookies } from 'next/headers';
 import { validateAdminCredentials, hashPassword } from '@/app/lib/auth';
 import { connectDB } from '@/app/lib/mongodb';
 import Admin from '@/src/models/Admin';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 
 export async function POST(request: Request) {
   try {
     const cookieStore = await cookies();
-    const isAuthenticated = cookieStore.get('ms_admin')?.value === '1';
+    const isAuthenticated = await isAdminAuthenticated();
 
     if (!isAuthenticated) {
       return NextResponse.json(
