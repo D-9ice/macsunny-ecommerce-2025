@@ -7,7 +7,7 @@ const securityHeaders = [
   { key: 'Permissions-Policy', value: 'camera=(), geolocation=(self), microphone=(self), payment=(self)' },
   { key: 'X-DNS-Prefetch-Control', value: 'off' },
   { key: 'Strict-Transport-Security', value: 'max-age=31536000' },
-  { key: 'Content-Security-Policy', value: "base-uri 'self'; object-src 'none'; frame-ancestors 'none'" },
+  { key: 'Content-Security-Policy', value: "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests" },
 ];
 
 const nextConfig: NextConfig = {
