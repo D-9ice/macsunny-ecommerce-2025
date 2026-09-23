@@ -3,6 +3,7 @@ import { connectDB } from '@/app/lib/mongodb';
 import { EquivalentModel, EQUIVALENT_CACHE_TTL_MS } from '@/app/lib/equivalents';
 import { cookies } from 'next/headers';
 import { isAdminAuthenticated } from '@/app/lib/adminAuth';
+import { rateAllowed, readBoundedJson, sameOrigin } from '@/app/lib/requestSecurity';
 
 const isAdmin = async () => await isAdminAuthenticated();
 
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Equivalents GET error:', error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: 'Equivalent request failed.' },
       { status: 500 }
     );
   }
@@ -60,9 +61,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   if (!(await isAdmin())) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  if (!sameOrigin(request)) return NextResponse.json({ success: false, error: 'Unexpected request origin.' }, { status: 403 });
+  if (!rateAllowed(request, 'admin-equivalents-write', 40, 5 * 60_000)) return NextResponse.json({ success: false, error: 'Too many equivalent update requests.' }, { status: 429 });
   try {
+    const parsed = await readBoundedJson(request, 64 * 1024);
+    if (!parsed.ok) return NextResponse.json({ success: false, error: parsed.message }, { status: parsed.status });
     await connectDB();
-    const data = await request.json();
+    const data = parsed.value;
 
     // Validate required fields
     if (!data.primary_sku) {
@@ -104,6 +109,8 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   if (!(await isAdmin())) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  if (!sameOrigin(request)) return NextResponse.json({ success: false, error: 'Unexpected request origin.' }, { status: 403 });
+  if (!rateAllowed(request, 'admin-equivalents-delete', 20, 5 * 60_000)) return NextResponse.json({ success: false, error: 'Too many equivalent deletion requests.' }, { status: 429 });
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
