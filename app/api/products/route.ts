@@ -37,7 +37,7 @@ function buildEquivalentTechnicalIndex(records: any[]) {
         manufacturer: String(record.primary_manufacturer || '').trim(),
         specs: specsObjectToList(record.primary_specs),
         alternatives: equivalentMpns.filter((mpn: string) => normalizePartKey(mpn) !== primary).slice(0, 8),
-        datasheetUrl: String(record.primary_datasheet_url || record.primary_reference_url || '').trim(),
+        datasheetUrl: String(record.primary_datasheet_url || '').trim(),
       };
       index.set(primary, primaryTechnical);
 
