@@ -130,6 +130,7 @@ export default function FrontierPromoAd() {
     if (!open) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    document.body.classList.add('frontier-promo-open');
 
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') closePromo();
@@ -138,6 +139,7 @@ export default function FrontierPromoAd() {
 
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.body.classList.remove('frontier-promo-open');
       document.removeEventListener('keydown', onEscape);
     };
   }, [open]);
