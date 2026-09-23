@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { connectDB, OrderModel } from '@/app/lib/mongodb';
 import { orderSchema } from '@/app/lib/validations';
 import { cookies } from 'next/headers';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 
-const isAdmin = async () => (await cookies()).get('ms_admin')?.value === '1';
+const isAdmin = async () => await isAdminAuthenticated();
 
 /**
  * ✅ Utility function: safely converts _id (ObjectId) to string
