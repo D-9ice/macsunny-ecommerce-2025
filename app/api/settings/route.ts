@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { connectDB, SiteSettingsModel } from '@/app/lib/mongodb';
 import { DEFAULT_SITE_THEME, sanitizeSiteTheme } from '@/app/lib/siteTheme';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +28,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const cookieStore = await cookies();
-    if (cookieStore.get('ms_admin')?.value !== '1') {
+    if (!(await isAdminAuthenticated())) {
       return NextResponse.json({ success: false, message: 'Unauthorized.' }, { status: 401 });
     }
 
