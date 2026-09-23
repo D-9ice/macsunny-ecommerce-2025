@@ -3,8 +3,6 @@ import { connectDB } from './mongodb';
 import Admin from '@/src/models/Admin';
 
 const SALT_ROUNDS = 10;
-const DEFAULT_PASSWORD = 'admin123'; // Only used for first-time setup
-
 /**
  * Hash a password using bcrypt
  */
@@ -35,14 +33,9 @@ export async function getAdminCredentials(): Promise<{
     
     let admin = await Admin.findOne({ email: 'admin@macsunny.com' });
     
-    // If no admin exists, create default one
     if (!admin) {
-      const defaultPasswordHash = await hashPassword(DEFAULT_PASSWORD);
-      admin = await Admin.create({
-        email: 'admin@macsunny.com',
-        passwordHash: defaultPasswordHash,
-      });
-      console.log('✅ Default admin created. Password: admin123 (Please change this!)');
+      console.error('Admin account is not initialized. Refusing insecure default-account creation.');
+      return null;
     }
     
     return {
