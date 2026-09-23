@@ -172,30 +172,51 @@ export default function FloatingActionLauncher() {
             ? 'RETRY VOICE'
             : 'CLICK TO TALK';
 
-  const voiceBarClasses =
+  const voiceBarTextClass =
     voiceBarState === 'active'
-      ? 'bg-slate-950 text-emerald-300'
+      ? 'text-emerald-300'
       : voiceBarState === 'muted'
-        ? 'bg-amber-950 text-amber-200'
+        ? 'text-amber-200'
         : voiceBarState === 'connecting'
-          ? 'bg-amber-50 text-amber-800'
+          ? 'text-amber-800'
           : voiceBarState === 'error'
-            ? 'bg-red-50 text-red-700'
-            : 'bg-white text-purple-700';
+            ? 'text-red-700'
+            : 'text-purple-700';
+
+  const voiceBarFill =
+    voiceBarState === 'active'
+      ? '#020617'
+      : voiceBarState === 'muted'
+        ? '#451a03'
+        : voiceBarState === 'connecting'
+          ? '#fffbeb'
+          : voiceBarState === 'error'
+            ? '#fef2f2'
+            : '#ffffff';
 
   const voiceBarsAnimated = voiceBarState === 'active' || voiceBarState === 'connecting';
 
   return (
-    <div ref={rootRef} className="fixed bottom-4 right-4 z-[70] sm:bottom-5 sm:right-5">
+    <div ref={rootRef} className="fixed bottom-4 right-4 z-[70] h-[68px] w-[68px] leading-none sm:bottom-5 sm:right-5">
       {!expanded && active === null && (
         <button
           type="button"
           onClick={() => void activateVoiceConversation()}
-          className={`absolute bottom-0 right-[52px] z-0 flex h-[68px] w-[260px] max-w-[calc(100vw-5rem)] items-center pr-8 shadow-2xl transition focus:outline-none focus:ring-2 focus:ring-purple-400 ${voiceBarClasses}`}
-          style={{ clipPath: 'polygon(22px 0, 100% 0, 100% 100%, 0 100%)' }}
+          className={`absolute bottom-0 right-[50px] z-0 flex h-[68px] w-[210px] max-w-[calc(100vw-4.75rem)] items-center bg-transparent pl-5 pr-7 drop-shadow-xl transition focus:outline-none focus:ring-2 focus:ring-purple-400 ${voiceBarTextClass}`}
           aria-label={voiceActive ? 'End MacSunny voice conversation' : voiceBarState === 'error' ? 'Retry MacSunny voice conversation' : 'Click to talk to the MacSunny voice assistant'}
         >
-          <span className="ml-6 flex h-9 w-9 shrink-0 items-center justify-center gap-[3px]" aria-hidden="true">
+          <svg
+            viewBox="0 0 210 68"
+            preserveAspectRatio="none"
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            aria-hidden="true"
+          >
+            <path
+              d="M24 0 H210 V68 H7 C3 68 1 66 2 62 L18 7 C19 3 21 1 24 0 Z"
+              fill={voiceBarFill}
+            />
+          </svg>
+          <span className="relative z-10 flex h-9 w-8 shrink-0 items-center justify-center gap-[3px]" aria-hidden="true">
             {[13, 22, 30, 19, 26].map((height, index) => (
               <span
                 key={`${height}-${index}`}
@@ -204,7 +225,7 @@ export default function FloatingActionLauncher() {
               />
             ))}
           </span>
-          <span className="ml-3 min-w-0 flex-1 truncate text-center text-[13px] font-black tracking-[0.08em] sm:text-sm">
+          <span className="relative z-10 ml-2 min-w-0 flex-1 whitespace-nowrap text-center text-[12px] font-black tracking-[0.055em] sm:text-[13px]">
             {voiceBarLabel}
           </span>
         </button>
@@ -334,7 +355,7 @@ export default function FloatingActionLauncher() {
         aria-expanded={expanded}
         aria-controls="floating-actions"
         aria-label={expanded ? 'Close contact and location menu' : needsGesture ? 'Open menu; voice welcome is ready' : 'Open contact and location menu'}
-        className="relative z-10 h-[68px] w-[68px] overflow-hidden rounded-full border-2 border-white/80 bg-slate-900 shadow-2xl transition-transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-emerald-300/70 active:scale-95"
+        className="relative z-10 block h-[68px] w-[68px] overflow-hidden rounded-full border-2 border-white/80 bg-slate-900 shadow-2xl transition-transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-emerald-300/70 active:scale-95"
       >
         <svg viewBox="0 0 68 68" className="h-full w-full" aria-hidden="true">
           <defs><linearGradient id="ai-segment" x1="0" x2="1"><stop stopColor="#2563eb" /><stop offset="1" stopColor="#9333ea" /></linearGradient></defs>
