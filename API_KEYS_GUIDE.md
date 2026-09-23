@@ -49,23 +49,24 @@ GOOGLE_SEARCH_ENGINE_ID=your_cx_here
 
 ---
 
-### 3. **Mouser Electronics API**
-**Cost:** FREE  
-**Purpose:** Get real product images from Mouser's database
+### 3. **Mouser Search API**
+**Cost:** No separate API charge published for standard Search API access  
+**Purpose:** Component identification, technical attributes, datasheets, images, lifecycle data, and suggested replacements
 
 **Steps to get:**
-1. Visit https://www.mouser.com/api-hub/
-2. Click "Sign Up" or "Register"
-3. Fill in your business details
-4. API key is provided instantly (no waiting)
-5. Copy your API key from the dashboard
+1. Visit https://www.mouser.com/en/api-search/
+2. Sign in or create a My Mouser account
+3. Complete the Search API request form
+4. Verify your email if requested
+5. Mouser will provide the Search API key and setup information
 
-**Add to `.env.local`:**
+**Add to `.env.local` or Vercel Production:**
 ```bash
 MOUSER_API_KEY=your_key_here
+MOUSER_PUBLIC_LOOKUP_ENABLED=false
 ```
 
-**Note:** Mouser has the most accurate component images since they're from actual product listings!
+MacSunny uses Mouser Search API V2 and keeps customer/public live lookup disabled by default.
 
 ---
 
@@ -100,10 +101,11 @@ Once you have all keys, your `.env.local` should look like this:
 MONGODB_URI=your_existing_mongodb_uri
 OPENAI_API_KEY=sk-proj-your_openai_key
 
-# ===== OPTIONAL (Smart Manager Image Search) =====
+# ===== OPTIONAL PROVIDERS =====
 GOOGLE_SEARCH_API_KEY=your_google_api_key
 GOOGLE_SEARCH_ENGINE_ID=your_cx_id
 MOUSER_API_KEY=your_mouser_key
+MOUSER_PUBLIC_LOOKUP_ENABLED=false
 UNSPLASH_ACCESS_KEY=your_unsplash_key
 
 # ===== ALREADY CONFIGURED =====
@@ -120,7 +122,7 @@ PAYSTACK_SECRET_KEY=your_paystack_secret_key
 The Smart Product Manager searches for images in this priority order:
 
 1. **Local Files** (Best) - Checks `/public/components/` folder first
-2. **Mouser API** (Most Accurate) - Real component images
+2. **Mouser Search API V2** - Real component images and verified product metadata
 3. **Google Search** (Broadest) - Web search for component images
 4. **Unsplash** (Fallback) - Generic category images
 5. **Manual Upload** (Always Available) - Admin can upload directly
