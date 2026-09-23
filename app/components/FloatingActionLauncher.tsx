@@ -30,11 +30,11 @@ export default function FloatingActionLauncher() {
     voiceActive,
     muted,
     needsGesture,
+    showVoiceInvite,
     error: voiceError,
     liveUserText,
     liveAssistantText,
     startVoice,
-    activateWelcome,
     stopVoice,
     toggleMute,
   } = useMacSunnyLive();
@@ -81,10 +81,10 @@ export default function FloatingActionLauncher() {
     setActive(action);
   };
 
-  const activateVoiceWelcome = () => {
+  const activateVoiceConversation = () => {
     setExpanded(false);
     setActive('ai');
-    void activateWelcome();
+    void startVoice(false);
   };
 
   const closeAi = () => {
@@ -130,15 +130,15 @@ export default function FloatingActionLauncher() {
 
   return (
     <div ref={rootRef} className="fixed bottom-4 right-4 z-[70] sm:bottom-5 sm:right-5">
-      {needsGesture && active !== 'ai' && (
+      {showVoiceInvite && !expanded && active === null && (
         <button
           type="button"
-          onClick={activateVoiceWelcome}
-          className="absolute bottom-[82px] right-0 flex w-max max-w-[calc(100vw-2rem)] items-center gap-2 rounded-full border border-purple-300 bg-white px-4 py-2 text-sm font-semibold text-purple-700 shadow-xl transition hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-400"
-          aria-label="Start MacSunny voice welcome"
+          onClick={activateVoiceConversation}
+          className="absolute bottom-[12px] right-[58px] z-0 flex h-11 w-max max-w-[calc(100vw-5.5rem)] items-center gap-2 rounded-l-full rounded-r-md border border-purple-300 bg-white py-2 pl-4 pr-7 text-sm font-black tracking-wide text-purple-700 shadow-xl transition hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-400 motion-safe:animate-pulse"
+          aria-label="Click to talk to the MacSunny voice assistant"
         >
-          <Mic className="h-4 w-4" />
-          Tap for voice welcome
+          <Mic className="h-4 w-4 shrink-0" />
+          <span>CLICK TO TALK</span>
         </button>
       )}
 
@@ -267,7 +267,7 @@ export default function FloatingActionLauncher() {
         aria-expanded={expanded}
         aria-controls="floating-actions"
         aria-label={expanded ? 'Close contact and location menu' : needsGesture ? 'Open menu; voice welcome is ready' : 'Open contact and location menu'}
-        className="relative h-[68px] w-[68px] overflow-hidden rounded-full border-2 border-white/80 bg-slate-900 shadow-2xl transition-transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-emerald-300/70 active:scale-95"
+        className="relative z-10 h-[68px] w-[68px] overflow-hidden rounded-full border-2 border-white/80 bg-slate-900 shadow-2xl transition-transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-emerald-300/70 active:scale-95"
       >
         <svg viewBox="0 0 68 68" className="h-full w-full" aria-hidden="true">
           <defs><linearGradient id="ai-segment" x1="0" x2="1"><stop stopColor="#2563eb" /><stop offset="1" stopColor="#9333ea" /></linearGradient></defs>
