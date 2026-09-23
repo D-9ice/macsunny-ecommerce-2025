@@ -21,6 +21,7 @@ export default function FloatingActionLauncher() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [voiceStartPending, setVoiceStartPending] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -30,7 +31,6 @@ export default function FloatingActionLauncher() {
     voiceActive,
     muted,
     needsGesture,
-    showVoiceInvite,
     error: voiceError,
     liveUserText,
     liveAssistantText,
@@ -39,18 +39,22 @@ export default function FloatingActionLauncher() {
     toggleMute,
   } = useMacSunnyLive();
 
-  const closeAll = () => {
-    if (voiceActive) stopVoice();
+  const closePanels = () => {
     setExpanded(false);
     setActive(null);
   };
 
+  const closeAll = () => {
+    if (voiceActive) stopVoice();
+    closePanels();
+  };
+
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) closeAll();
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) closePanels();
     };
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeAll();
+      if (event.key === 'Escape') closePanels();
     };
     document.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);
@@ -58,7 +62,7 @@ export default function FloatingActionLauncher() {
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [voiceActive]);
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -76,21 +80,40 @@ export default function FloatingActionLauncher() {
   }, []);
 
   const chooseAction = (action: Action) => {
-    if (voiceActive && action !== 'ai') stopVoice();
     setExpanded(false);
     setActive(action);
   };
 
-  const activateVoiceConversation = () => {
+  const activateVoiceConversation = async () => {
+    if (voiceActive) {
+      stopVoice();
+      setVoiceStartPending(false);
+      return;
+    }
+    if (voiceStartPending) return;
+
     setExpanded(false);
-    setActive('ai');
-    void startVoice(false);
+    setActive(null);
+    setVoiceStartPending(true);
+    const started = await startVoice(false);
+    if (!started) setVoiceStartPending(false);
   };
 
   const closeAi = () => {
     if (voiceActive) stopVoice();
     setActive(null);
   };
+
+  useEffect(() => {
+    if (voiceActive) {
+      setVoiceStartPending(false);
+      if (active === 'ai') setActive(null);
+    }
+  }, [voiceActive, active]);
+
+  useEffect(() => {
+    if (status === 'error') setVoiceStartPending(false);
+  }, [status]);
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -128,17 +151,62 @@ export default function FloatingActionLauncher() {
           ? 'bg-red-500'
           : 'bg-gray-400';
 
+  const voiceBarState = voiceActive
+    ? muted
+      ? 'muted'
+      : 'active'
+    : voiceStartPending
+      ? 'connecting'
+      : status === 'error'
+        ? 'error'
+        : 'idle';
+
+  const voiceBarLabel =
+    voiceBarState === 'active'
+      ? 'IN CONVERSATION'
+      : voiceBarState === 'muted'
+        ? 'MUTED'
+        : voiceBarState === 'connecting'
+          ? 'CONNECTING…'
+          : voiceBarState === 'error'
+            ? 'RETRY VOICE'
+            : 'CLICK TO TALK';
+
+  const voiceBarClasses =
+    voiceBarState === 'active'
+      ? 'bg-slate-950 text-emerald-300'
+      : voiceBarState === 'muted'
+        ? 'bg-amber-950 text-amber-200'
+        : voiceBarState === 'connecting'
+          ? 'bg-amber-50 text-amber-800'
+          : voiceBarState === 'error'
+            ? 'bg-red-50 text-red-700'
+            : 'bg-white text-purple-700';
+
+  const voiceBarsAnimated = voiceBarState === 'active' || voiceBarState === 'connecting';
+
   return (
     <div ref={rootRef} className="fixed bottom-4 right-4 z-[70] sm:bottom-5 sm:right-5">
-      {showVoiceInvite && !expanded && active === null && (
+      {!expanded && active === null && (
         <button
           type="button"
-          onClick={activateVoiceConversation}
-          className="absolute bottom-[12px] right-[58px] z-0 flex h-11 w-max max-w-[calc(100vw-5.5rem)] items-center gap-2 rounded-l-full rounded-r-md border border-purple-300 bg-white py-2 pl-4 pr-7 text-sm font-black tracking-wide text-purple-700 shadow-xl transition hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-400 motion-safe:animate-pulse"
-          aria-label="Click to talk to the MacSunny voice assistant"
+          onClick={() => void activateVoiceConversation()}
+          className={`absolute bottom-0 right-[52px] z-0 flex h-[68px] w-[260px] max-w-[calc(100vw-5rem)] items-center pr-8 shadow-2xl transition focus:outline-none focus:ring-2 focus:ring-purple-400 ${voiceBarClasses}`}
+          style={{ clipPath: 'polygon(22px 0, 100% 0, 100% 100%, 0 100%)' }}
+          aria-label={voiceActive ? 'End MacSunny voice conversation' : voiceBarState === 'error' ? 'Retry MacSunny voice conversation' : 'Click to talk to the MacSunny voice assistant'}
         >
-          <Mic className="h-4 w-4 shrink-0" />
-          <span>CLICK TO TALK</span>
+          <span className="ml-6 flex h-9 w-9 shrink-0 items-center justify-center gap-[3px]" aria-hidden="true">
+            {[13, 22, 30, 19, 26].map((height, index) => (
+              <span
+                key={`${height}-${index}`}
+                className={`w-[3px] rounded-sm bg-current ${voiceBarsAnimated ? 'voice-vu-bar' : ''}`}
+                style={{ height: `${height}px`, animationDelay: `${index * 110}ms` }}
+              />
+            ))}
+          </span>
+          <span className="ml-3 min-w-0 flex-1 truncate text-center text-[13px] font-black tracking-[0.08em] sm:text-sm">
+            {voiceBarLabel}
+          </span>
         </button>
       )}
 
@@ -160,7 +228,7 @@ export default function FloatingActionLauncher() {
         </section>
       )}
 
-      {active === 'ai' && (
+      {active === 'ai' && !voiceActive && (
         <section role="dialog" aria-label="MacSunny AI Assistant" className="absolute bottom-20 right-0 flex max-h-[min(620px,calc(100vh-7rem))] w-[min(24rem,calc(100vw-2rem))] flex-col rounded-xl border-2 border-purple-400 force-bg-white shadow-2xl animate-fade-in-up">
           <header className="relative rounded-t-lg bg-gradient-to-r from-blue-600 to-purple-600 p-4 pr-12">
             <button onClick={closeAi} aria-label="Close AI Assistant" className="absolute right-3 top-3 rounded-md p-1 text-white hover:bg-white/20"><X size={20} /></button>
@@ -260,7 +328,6 @@ export default function FloatingActionLauncher() {
       <button
         type="button"
         onClick={() => {
-          if (voiceActive) stopVoice();
           setActive(null);
           setExpanded((current) => !current);
         }}
