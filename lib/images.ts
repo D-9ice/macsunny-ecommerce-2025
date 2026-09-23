@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import sharp, { type Metadata } from 'sharp';
 import { del, put } from '@vercel/blob';
 
 // Defense in depth: product images never require HEIF/AVIF decoding.
@@ -11,7 +11,7 @@ const QUALITY = Number(process.env.MACSUNNY_IMAGE_WEBP_QUALITY || 80);
 export async function convertToWebp(file: File) {
   if (!file.size || file.size > MAX_BYTES) throw new Error(`Image must be smaller than ${Math.round(MAX_BYTES / 1024 / 1024)} MB`);
   const input = Buffer.from(await file.arrayBuffer());
-  let metadata: sharp.Metadata;
+  let metadata: Metadata;
   try { metadata = await sharp(input, { animated: false, limitInputPixels: 40_000_000 }).metadata(); }
   catch { throw new Error('The uploaded file is not a supported image'); }
   if (!metadata.format || !['jpeg', 'png', 'webp'].includes(metadata.format)) throw new Error('Unsupported image format. Use JPG, PNG, or WebP.');
