@@ -15,19 +15,6 @@ function WhatsAppIcon({ className = 'h-7 w-7' }: { className?: string }) {
   );
 }
 
-function LocationIcon({ className = 'h-8 w-8' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 48 48" className={className} aria-hidden="true">
-      <path fill="#1976D2" d="M24,4c-7.7,0-14,6.3-14,14c0,10.5,14,26,14,26s14-15.5,14-26C38,10.3,31.7,4,24,4z" />
-      <circle fill="#FFF" cx="24" cy="17" r="5" />
-      <path fill="#1976D2" d="M24,11c-3.3,0-6,2.7-6,6s2.7,6,6,6s6-2.7,6-6S27.3,11,24,11z M24,20c-1.7,0-3-1.3-3-3s1.3-3,3-3s3,1.3,3,3S25.7,20,24,20z" />
-      <path fill="#EA4335" d="M24,44S10,28.5,10,18c0-2.4,0.6-4.6,1.7-6.6" />
-      <path fill="#FBBC04" d="M37.3,11.4C36.4,9.6,35.3,8,34,6.7" />
-      <path fill="#34A853" d="M29.7,5.3C27.9,4.5,25.9,4,24,4" />
-    </svg>
-  );
-}
-
 export default function FloatingActionLauncher() {
   const [expanded, setExpanded] = useState(false);
   const [active, setActive] = useState<Action | null>(null);
@@ -264,7 +251,7 @@ export default function FloatingActionLauncher() {
       )}
 
       <div id="floating-actions" className="absolute bottom-0 right-0" aria-hidden={!expanded}>
-        <button type="button" onClick={() => chooseAction('location')} tabIndex={expanded ? 0 : -1} aria-label="View Location" className={`absolute bottom-0 right-0 flex h-16 w-16 items-center justify-center rounded-full border-2 border-gray-200 bg-white shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 ${expanded ? '-translate-y-[216px] opacity-100' : 'pointer-events-none translate-y-0 scale-75 opacity-0'}`}><LocationIcon /></button>
+        <button type="button" onClick={() => chooseAction('location')} tabIndex={expanded ? 0 : -1} aria-label="View Location" className={`absolute bottom-0 right-0 flex h-16 w-16 flex-col items-center justify-center rounded-full border-2 border-gray-200 bg-white text-slate-800 shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 ${expanded ? '-translate-y-[216px] opacity-100' : 'pointer-events-none translate-y-0 scale-75 opacity-0'}`}><span className="text-[10px] font-black leading-none tracking-[0.04em]">LOCATE</span><span className="mt-0.5 text-[12px] font-black leading-none tracking-[0.08em]">US</span></button>
         <button type="button" onClick={() => chooseAction('ai')} tabIndex={expanded ? 0 : -1} aria-label="Chat with AI" className={`absolute bottom-0 right-0 flex h-16 w-16 flex-col items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-purple-600 p-2 text-white shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-purple-400 ${needsGesture ? 'ring-4 ring-amber-300/80 motion-safe:animate-pulse' : ''} ${expanded ? '-translate-y-36 opacity-100' : 'pointer-events-none translate-y-0 scale-75 opacity-0'}`}><span className="text-[13px] font-black leading-none">Ask</span><span className="text-[11px] font-black leading-none tracking-tighter">macsunny</span><span className="text-[13px] font-black leading-none">AI</span></button>
         <button type="button" onClick={() => chooseAction('whatsapp')} tabIndex={expanded ? 0 : -1} aria-label="Chat on WhatsApp" className={`absolute bottom-0 right-0 flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-green-400 ${expanded ? '-translate-y-[72px] opacity-100' : 'pointer-events-none translate-y-0 scale-75 opacity-0'}`}><WhatsAppIcon /></button>
       </div>
@@ -289,7 +276,8 @@ export default function FloatingActionLauncher() {
           <path d="M34 34 L5.42 50.5 A33 33 0 0 1 34 1 Z" fill="white" stroke="white" strokeWidth="1.5" />
           <g transform="translate(39 10) scale(.72)" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347" /></g>
           <text x="34" y="56" fill="white" textAnchor="middle" fontSize="9" fontWeight="900">AI</text>
-          <g transform="translate(8 18) scale(.42)"><LocationIcon className="h-12 w-12" /></g>
+          <text x="19.5" y="29" fill="#0f172a" textAnchor="middle" fontSize="5.7" fontWeight="900" letterSpacing=".2">LOCATE</text>
+          <text x="19.5" y="36.5" fill="#0f172a" textAnchor="middle" fontSize="7.6" fontWeight="900" letterSpacing=".35">US</text>
         </svg>
       </button>
     </div>
