@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { connectDB, ProductModel } from '@/app/lib/mongodb';
+import { rateAllowed, readBoundedJson, sameOrigin } from '@/app/lib/requestSecurity';
 
 const AI_MODEL = 'gpt-5.6-luna';
 const AI_PROVIDER = 'GPT-5.6 Luna';
@@ -31,13 +32,40 @@ function extractComponentToken(text: string) {
 
 export async function POST(req: Request) {
   try {
-    const { messages, includeProductContext } = await req.json();
+    if (!sameOrigin(req)) {
+      return NextResponse.json({ success: false, message: 'Unexpected request origin.' }, { status: 403 });
+    }
 
-    if (!messages || !Array.isArray(messages)) {
+    if (!rateAllowed(req, 'chat', 30, 5 * 60_000)) {
+      return NextResponse.json({ success: false, message: 'Too many assistant requests. Please wait a moment.' }, { status: 429 });
+    }
+
+    const parsed = await readBoundedJson(req, 24 * 1024);
+    if (!parsed.ok) {
+      return NextResponse.json({ success: false, message: parsed.message }, { status: parsed.status });
+    }
+
+    const rawMessages = Array.isArray(parsed.value?.messages) ? parsed.value.messages : [];
+    const messages = rawMessages
+      .slice(-16)
+      .map((message: any) => ({
+        role: message?.role === 'assistant' ? 'assistant' : 'user',
+        content: String(message?.content || '').trim().slice(0, 2_000),
+      }))
+      .filter((message: { role: string; content: string }) => message.content);
+
+    const includeProductContext = Boolean(parsed.value?.includeProductContext);
+
+    if (!messages.length) {
       return NextResponse.json(
         { success: false, message: 'Messages array is required' },
         { status: 400 }
       );
+    }
+
+    const totalChars = messages.reduce((sum: number, message: { content: string }) => sum + message.content.length, 0);
+    if (totalChars > 12_000) {
+      return NextResponse.json({ success: false, message: 'Conversation is too large.' }, { status: 413 });
     }
 
     if (!process.env.OPENAI_API_KEY) {
@@ -218,9 +246,10 @@ CRITICAL INSTRUCTIONS:
       context_type: contextType
     });
 
-  } catch (error: any) {
+  } catch (error) {
+    console.error('chat.request.failed', { error });
     return NextResponse.json(
-      { success: false, message: error.message || 'Chat failed' },
+      { success: false, message: 'Chat is temporarily unavailable.' },
       { status: 500 }
     );
   }
