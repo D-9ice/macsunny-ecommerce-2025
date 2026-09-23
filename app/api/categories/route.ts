@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { connectDB, CategoryModel } from '@/app/lib/mongodb';
 import { isAdminAuthenticated } from '@/app/lib/adminAuth';
+import { rateAllowed, readBoundedJson, sameOrigin } from '@/app/lib/requestSecurity';
 
 const isAdmin = async () => await isAdminAuthenticated();
 
@@ -31,9 +32,13 @@ export async function GET() {
 // POST - Add a new category
 export async function POST(request: Request) {
   if (!(await isAdmin())) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+  if (!sameOrigin(request)) return NextResponse.json({ success: false, message: 'Unexpected request origin.' }, { status: 403 });
+  if (!rateAllowed(request, 'admin-categories-write', 30, 5 * 60_000)) return NextResponse.json({ success: false, message: 'Too many category update requests.' }, { status: 429 });
   try {
+    const parsed = await readBoundedJson(request, 8 * 1024);
+    if (!parsed.ok) return NextResponse.json({ success: false, message: parsed.message }, { status: parsed.status });
     await connectDB();
-    const { name } = await request.json();
+    const { name } = parsed.value;
     
     if (!name || !name.trim()) {
       return NextResponse.json(
@@ -72,6 +77,8 @@ export async function POST(request: Request) {
 // DELETE - Remove a category
 export async function DELETE(request: Request) {
   if (!(await isAdmin())) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+  if (!sameOrigin(request)) return NextResponse.json({ success: false, message: 'Unexpected request origin.' }, { status: 403 });
+  if (!rateAllowed(request, 'admin-categories-delete', 15, 5 * 60_000)) return NextResponse.json({ success: false, message: 'Too many category deletion requests.' }, { status: 429 });
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
