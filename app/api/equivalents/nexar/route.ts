@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { isNexarConfigured } from '@/app/lib/nexar';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 
 export async function GET() {
-  if ((await cookies()).get('ms_admin')?.value !== '1') {
+  if (!(await isAdminAuthenticated())) {
     return NextResponse.json(
       { success: false, error: 'Unauthorized' },
       { status: 401 }
