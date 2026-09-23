@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { connectDB, ServiceRenewalsModel } from '@/app/lib/mongodb';
-import {
 import { isAdminAuthenticated } from '@/app/lib/adminAuth';
+import {
   DEFAULT_SERVICE_RENEWALS,
   type ServiceRenewalItem,
   type ServiceRenewalStatus,
@@ -45,8 +44,7 @@ function sanitizeService(value: unknown): ServiceRenewalItem | null {
 }
 
 async function requireAdmin() {
-  const cookieStore = await cookies();
-  return await isAdminAuthenticated();
+  return isAdminAuthenticated();
 }
 
 export async function GET() {
