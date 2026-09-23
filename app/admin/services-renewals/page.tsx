@@ -3,15 +3,51 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
+  CalendarClock,
   CircleDollarSign,
   Plus,
   Save,
+  Send,
   ShieldCheck,
   Trash2,
   Wrench,
 } from 'lucide-react';
 import AdminWorkspace from '@/app/admin/components/AdminWorkspace';
 import type { ServiceRenewalItem, ServiceRenewalStatus } from '@/app/lib/serviceRenewals';
+
+type MaintenanceNotice = {
+  id: string;
+  direction: 'frontier_to_macsunny' | 'macsunny_to_frontier';
+  severity: 'info' | 'warning' | 'critical';
+  subject: string;
+  message: string;
+  status: 'open' | 'acknowledged' | 'resolved';
+  createdAt: string;
+  acknowledgedAt?: string | null;
+  syncStatus?: 'synced' | 'pending' | 'failed';
+};
+
+type MaintenanceRecord = {
+  reference: string;
+  completedAt: string;
+  summary: string;
+  findings: string;
+  workPerformed: string;
+  recommendations: string;
+  nextDueAt: string;
+};
+
+type MaintenanceState = {
+  provider: string;
+  intervalMonths: number;
+  lastServiceAt: string | null;
+  nextDueAt: string | null;
+  schedule: { code: string; label: string; daysUntil: number | null };
+  notices: MaintenanceNotice[];
+  records: MaintenanceRecord[];
+  openNoticeCount: number;
+  syncConfigured: boolean;
+};
 
 const DAY_MS = 86_400_000;
 
@@ -60,6 +96,11 @@ export default function ServicesRenewalsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [maintenance, setMaintenance] = useState<MaintenanceState | null>(null);
+  const [maintenanceLoading, setMaintenanceLoading] = useState(true);
+  const [maintenanceMessage, setMaintenanceMessage] = useState('');
+  const [issueText, setIssueText] = useState('');
+  const [issueSending, setIssueSending] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -76,6 +117,65 @@ export default function ServicesRenewalsPage() {
     };
     void load();
   }, []);
+
+  const loadMaintenance = async () => {
+    try {
+      const response = await fetch('/api/admin/maintenance', { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok || !data?.success) throw new Error(data?.message || 'Unable to load maintenance status.');
+      setMaintenance(data.maintenance);
+    } catch (error) {
+      setMaintenanceMessage(error instanceof Error ? error.message : 'Unable to load maintenance status.');
+    } finally {
+      setMaintenanceLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadMaintenance();
+  }, []);
+
+  const maintenanceAction = async (payload: Record<string, unknown>) => {
+    const response = await fetch('/api/admin/maintenance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (!response.ok || !data?.success) throw new Error(data?.message || 'Maintenance action failed.');
+    if (data.maintenance) setMaintenance(data.maintenance);
+    return data;
+  };
+
+  const acknowledgeNotice = async (id: string) => {
+    setMaintenanceMessage('');
+    try {
+      const data = await maintenanceAction({ action: 'acknowledge_notice', id });
+      setMaintenanceMessage(data.sync?.ok ? 'Maintenance notice acknowledged and synchronized with Frontier DevConsults.' : 'Notice acknowledged locally. Frontier synchronization still needs attention.');
+    } catch (error) {
+      setMaintenanceMessage(error instanceof Error ? error.message : 'Unable to acknowledge notice.');
+    }
+  };
+
+  const reportIssue = async () => {
+    if (!issueText.trim()) return;
+    setIssueSending(true);
+    setMaintenanceMessage('');
+    try {
+      const data = await maintenanceAction({
+        action: 'report_issue',
+        severity: 'warning',
+        subject: 'MacSunny maintenance attention requested',
+        message: issueText.trim(),
+      });
+      setIssueText('');
+      setMaintenanceMessage(data.sync?.ok ? 'Issue sent securely to Frontier DevConsults.' : 'Issue saved locally, but Frontier synchronization needs attention.');
+    } catch (error) {
+      setMaintenanceMessage(error instanceof Error ? error.message : 'Unable to send the maintenance issue.');
+    } finally {
+      setIssueSending(false);
+    }
+  };
 
   const reminders = useMemo(() => {
     return services
@@ -403,6 +503,148 @@ export default function ServicesRenewalsPage() {
               })}
             </div>
           )}
+        </section>
+
+        <section className="rounded-2xl border border-violet-500/30 bg-violet-950/20 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <CalendarClock className="mt-0.5 shrink-0 text-violet-300" size={23} />
+              <div>
+                <h2 className="font-bold text-violet-100">Quarterly Application Service & Maintenance</h2>
+                <p className="mt-1 text-sm text-slate-300">
+                  Contractual preventive service by Frontier DevConsults every 3 calendar months.
+                </p>
+              </div>
+            </div>
+            {maintenance ? (
+              <span className={`rounded-full border px-3 py-1.5 text-xs font-bold ${
+                ['overdue', 'due', 'urgent'].includes(maintenance.schedule.code)
+                  ? 'border-red-500/40 bg-red-950/50 text-red-200'
+                  : maintenance.schedule.code === 'approaching' || maintenance.schedule.code === 'setup_required'
+                    ? 'border-amber-500/40 bg-amber-950/50 text-amber-200'
+                    : 'border-emerald-500/40 bg-emerald-950/50 text-emerald-200'
+              }`}>
+                {maintenance.schedule.label}
+              </span>
+            ) : null}
+          </div>
+
+          {maintenanceLoading ? (
+            <p className="mt-5 text-sm text-slate-400">Loading maintenance schedule…</p>
+          ) : maintenance ? (
+            <>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Service provider</p>
+                  <p className="mt-2 font-bold text-white">{maintenance.provider}</p>
+                </div>
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Frequency</p>
+                  <p className="mt-2 font-bold text-white">Every {maintenance.intervalMonths} months</p>
+                </div>
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Last service</p>
+                  <p className="mt-2 font-bold text-white">{maintenance.lastServiceAt ? new Date(maintenance.lastServiceAt).toLocaleDateString('en-GB') : 'Not yet recorded'}</p>
+                </div>
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Next service</p>
+                  <p className="mt-2 font-bold text-white">{maintenance.nextDueAt ? new Date(maintenance.nextDueAt).toLocaleDateString('en-GB') : 'Schedule setup required'}</p>
+                </div>
+              </div>
+
+              {!maintenance.syncConfigured ? (
+                <div className="mt-4 rounded-xl border border-amber-600/30 bg-amber-950/30 p-3 text-sm text-amber-100">
+                  Secure Frontier synchronization is installed but not active until the shared maintenance secret is configured on both deployments.
+                </div>
+              ) : null}
+
+              {maintenance.notices.filter((notice) => notice.direction === 'frontier_to_macsunny' && notice.status !== 'resolved').length > 0 ? (
+                <div className="mt-5 space-y-3">
+                  <h3 className="font-bold text-white">Frontier maintenance notices</h3>
+                  {maintenance.notices
+                    .filter((notice) => notice.direction === 'frontier_to_macsunny' && notice.status !== 'resolved')
+                    .map((notice) => (
+                      <article key={notice.id} className={`rounded-xl border p-4 ${
+                        notice.severity === 'critical'
+                          ? 'border-red-500/40 bg-red-950/30'
+                          : notice.severity === 'warning'
+                            ? 'border-amber-500/40 bg-amber-950/20'
+                            : 'border-blue-500/30 bg-blue-950/20'
+                      }`}>
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <p className="font-bold text-white">{notice.subject}</p>
+                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-300">{notice.message}</p>
+                            <p className="mt-2 text-xs text-slate-500">{new Date(notice.createdAt).toLocaleString('en-GB')}</p>
+                          </div>
+                          {notice.status === 'open' ? (
+                            <button
+                              type="button"
+                              onClick={() => void acknowledgeNotice(notice.id)}
+                              className="rounded-lg bg-violet-700 px-3 py-2 text-xs font-bold text-white hover:bg-violet-600"
+                            >
+                              Acknowledge
+                            </button>
+                          ) : (
+                            <span className="rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3 py-1 text-xs font-bold text-emerald-200">
+                              Acknowledged
+                            </span>
+                          )}
+                        </div>
+                      </article>
+                    ))}
+                </div>
+              ) : null}
+
+              <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950 p-4">
+                <h3 className="font-bold text-white">Report a maintenance issue to Frontier</h3>
+                <p className="mt-1 text-xs text-slate-500">Use this when the owner or salesperson notices a technical problem that needs developer attention.</p>
+                <textarea
+                  value={issueText}
+                  onChange={(event) => setIssueText(event.target.value)}
+                  rows={3}
+                  maxLength={3000}
+                  placeholder="Describe the issue clearly…"
+                  className="mt-3 w-full resize-y rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => void reportIssue()}
+                  disabled={issueSending || !issueText.trim()}
+                  className="mt-3 inline-flex items-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-sm font-bold text-white hover:bg-violet-600 disabled:opacity-50"
+                >
+                  <Send size={15} />
+                  {issueSending ? 'Sending…' : 'Send to Frontier DevConsults'}
+                </button>
+              </div>
+
+              <div className="mt-5">
+                <h3 className="font-bold text-white">Service history</h3>
+                {maintenance.records.length === 0 ? (
+                  <p className="mt-2 text-sm text-slate-500">No completed quarterly service has been synchronized yet.</p>
+                ) : (
+                  <div className="mt-3 space-y-3">
+                    {maintenance.records.slice(0, 12).map((record) => (
+                      <article key={record.reference} className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="font-mono text-sm font-bold text-violet-200">{record.reference}</p>
+                          <p className="text-xs text-slate-500">{new Date(record.completedAt).toLocaleDateString('en-GB')}</p>
+                        </div>
+                        {record.summary ? <p className="mt-2 text-sm text-slate-300">{record.summary}</p> : null}
+                        <p className="mt-2 text-xs text-slate-500">Next scheduled service: {new Date(record.nextDueAt).toLocaleDateString('en-GB')}</p>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : null}
+
+          {maintenanceMessage ? (
+            <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950 p-3 text-sm text-slate-300">
+              {maintenanceMessage}
+            </div>
+          ) : null}
         </section>
 
         <section className="rounded-2xl border border-blue-500/30 bg-blue-950/20 p-5">
