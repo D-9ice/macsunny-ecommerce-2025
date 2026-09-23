@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const isAuthenticated = cookieStore.get('ms_admin')?.value === '1';
-
-  return NextResponse.json({ authenticated: isAuthenticated });
+  return NextResponse.json({ authenticated: await isAdminAuthenticated() });
 }
