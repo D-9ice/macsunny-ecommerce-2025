@@ -751,3 +751,27 @@ p, span, div {
     display: none !important;
   }
 }
+
+
+/* Voice status bar: animated LED/VU treatment for live microphone states. */
+@keyframes macsunny-voice-vu {
+  0%, 100% {
+    transform: scaleY(0.35);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.voice-vu-bar {
+  transform-origin: center;
+  animation: macsunny-voice-vu 720ms ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-vu-bar {
+    animation: none;
+  }
+}
