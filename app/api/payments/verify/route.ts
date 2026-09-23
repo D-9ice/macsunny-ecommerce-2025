@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectDB, OrderModel } from '@/app/lib/mongodb';
+import { rateAllowed, readBoundedJson, sameOrigin } from '@/app/lib/requestSecurity';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,17 @@ function parseMetadata(value: unknown): any {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    if (!sameOrigin(request)) {
+      return NextResponse.json({ success: false, message: 'Unexpected request origin.' }, { status: 403 });
+    }
+    if (!rateAllowed(request, 'payment-verify', 30, 5 * 60_000)) {
+      return NextResponse.json({ success: false, message: 'Too many payment verification requests. Please wait.' }, { status: 429 });
+    }
+    const parsed = await readBoundedJson(request, 8 * 1024);
+    if (!parsed.ok) {
+      return NextResponse.json({ success: false, message: parsed.message }, { status: parsed.status });
+    }
+    const body = parsed.value;
     const orderId = String(body?.orderId || '').trim();
     const reference = String(body?.reference || '').trim();
 
