@@ -4,6 +4,7 @@ import { connectDB, ProductModel, CategoryModel } from '@/app/lib/mongodb';
 import { EquivalentModel } from '@/app/lib/equivalents';
 import { deleteBlobSafely } from '@/lib/images';
 import { isAdminAuthenticated } from '@/app/lib/adminAuth';
+import { rateAllowed, readBoundedJson, sameOrigin } from '@/app/lib/requestSecurity';
 
 const projection = 'sku name category price imageUrl imageAlt description quantity manufacturer mpn package pinCount datasheetUrl specifications verificationSources verificationConfidence verificationStatus imageSourceUrl createdAt updatedAt';
 const isAdmin = async () => await isAdminAuthenticated();
@@ -157,9 +158,13 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!(await isAdmin())) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+  if (!sameOrigin(request)) return NextResponse.json({ success: false, message: 'Unexpected request origin.' }, { status: 403 });
+  if (!rateAllowed(request, 'admin-products-write', 60, 5 * 60_000)) return NextResponse.json({ success: false, message: 'Too many product update requests.' }, { status: 429 });
   try {
+    const parsed = await readBoundedJson(request, 64 * 1024);
+    if (!parsed.ok) return NextResponse.json({ success: false, message: parsed.message }, { status: parsed.status });
     await connectDB();
-    const body = await request.json();
+    const body = parsed.value;
     const { sku, name, category, price, description = '', quantity = 0 } = body;
     if (!sku?.trim() || !name?.trim() || !category?.trim() || !Number.isFinite(Number(price)) || Number(price) <= 0) return NextResponse.json({ success: false, message: 'A positive admin-entered price and all required product fields are required' }, { status: 400 });
     const canonicalCategory = await managedCategory(category);
@@ -190,8 +195,12 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   if (!(await isAdmin())) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+  if (!sameOrigin(request)) return NextResponse.json({ success: false, message: 'Unexpected request origin.' }, { status: 403 });
+  if (!rateAllowed(request, 'admin-products-write', 60, 5 * 60_000)) return NextResponse.json({ success: false, message: 'Too many product update requests.' }, { status: 429 });
+  const parsed = await readBoundedJson(request, 64 * 1024);
+  if (!parsed.ok) return NextResponse.json({ success: false, message: parsed.message }, { status: parsed.status });
   await connectDB();
-  const body = await request.json();
+  const body = parsed.value;
 
   const originalSku = String(body.originalSku || body.sku || '').trim();
   const nextSku = String(body.sku || '').trim();
@@ -303,6 +312,8 @@ export async function PUT(request: Request) {
 }
 export async function DELETE(request: Request) {
   if (!(await isAdmin())) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+  if (!sameOrigin(request)) return NextResponse.json({ success: false, message: 'Unexpected request origin.' }, { status: 403 });
+  if (!rateAllowed(request, 'admin-products-delete', 20, 5 * 60_000)) return NextResponse.json({ success: false, message: 'Too many product deletion requests.' }, { status: 429 });
   await connectDB();
   const sku = new URL(request.url).searchParams.get('sku');
   if (!sku) return NextResponse.json({ success: false, message: 'SKU is required' }, { status: 400 });
