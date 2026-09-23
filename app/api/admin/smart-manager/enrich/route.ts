@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { componentSchema, normalizeIdentifier, openAI, parseJson, safeHttpUrl, SMART_MANAGER_MODEL } from '@/app/lib/super-smart-manager';
 import { deleteBlobSafely, uploadAnalysisWebp } from '@/lib/images';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -13,7 +14,7 @@ const placeholderIdentity = /^(?:not identified|unknown(?:\s*\/\s*unmarked)?|unk
 
 export async function POST(request: Request) {
   const requestId = crypto.randomUUID();
-  if ((await cookies()).get('ms_admin')?.value !== '1') return NextResponse.json({ success: false, message: 'Unauthorized', requestId }, { status: 401 });
+  if (!(await isAdminAuthenticated())) return NextResponse.json({ success: false, message: 'Unauthorized', requestId }, { status: 401 });
   let temporaryBlob: string | undefined;
   try {
     const form = await request.formData();
