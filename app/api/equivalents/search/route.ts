@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { connectDB, ProductModel } from '@/app/lib/mongodb';
 import { isNexarConfigured, searchNexarEquivalents } from '@/app/lib/nexar';
-import { allDatasheetReferenceUrl, isAllDatasheetConfigured, searchAllDatasheetPart } from '@/app/lib/alldatasheet';
+import { isMouserConfigured, searchMouserComponent } from '@/app/lib/mouser';
 import { EquivalentModel, EQUIVALENT_CACHE_TTL_MS } from '@/app/lib/equivalents';
-import { cookies } from 'next/headers';
 
 function escapeRegex(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return value.replace(/[|\\{}()[\]^$+*?.-]/g, '\\$&');
 }
 
-function normalizePartKey(value: string) {
+function normalizePartKey(value: unknown) {
   return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
@@ -18,12 +18,17 @@ function lookupAliases(value: string) {
   if (/^[ABCDJK]\d+[A-Z0-9-]*$/.test(compact)) return [compact, '2S' + compact];
   return [compact];
 }
+
+function allDatasheetManualReferenceUrl(partNumber: string) {
+  return 'https://www.alldatasheet.net/view.jsp?Searchword=' + encodeURIComponent(partNumber.trim());
+}
+
 async function appendLocalEquivalentMatches(results: any, equivalents: any[], searchTerm: string) {
   for (const equivalent of equivalents) {
     const mpn = String(equivalent.mpn || '').trim();
     if (!mpn) continue;
 
-    const exact = new RegExp(`^${escapeRegex(mpn)}$`, 'i');
+    const exact = new RegExp('^' + escapeRegex(mpn) + '$', 'i');
     const localMatch = await ProductModel.findOne({
       $or: [
         { sku: exact },
@@ -35,10 +40,17 @@ async function appendLocalEquivalentMatches(results: any, equivalents: any[], se
     if (localMatch && !results.found_in_inventory.some((product: any) => product.sku === localMatch.sku)) {
       results.found_in_inventory.push({
         sku: localMatch.sku,
+        mpn: localMatch.mpn || '',
         name: localMatch.name,
         price: localMatch.price,
+        quantity: localMatch.quantity || 0,
         category: localMatch.category,
-        image: localMatch.image,
+        image: localMatch.imageUrl || localMatch.image || '',
+        description: localMatch.description || '',
+        manufacturer: localMatch.manufacturer || '',
+        package: localMatch.package || '',
+        pinCount: localMatch.pinCount || '',
+        specifications: localMatch.specifications || [],
         in_stock: true,
         source: 'local',
         equivalent_of: searchTerm,
@@ -47,25 +59,37 @@ async function appendLocalEquivalentMatches(results: any, equivalents: any[], se
   }
 }
 
+function normalizeEquivalents(items: any[]) {
+  const seen = new Set<string>();
+  return (items || []).filter((item) => {
+    const key = normalizePartKey(item?.mpn);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 /**
  * Smart component equivalent search.
  *
- * Strategy:
- * 1. Check MacSunny local inventory first.
- * 2. Check cached equivalents (90-day TTL).
- * 3. On cache miss, query Nexar Supply GraphQL for similar parts.
- * 4. Cache Nexar results for future queries.
- * 5. Check whether any returned equivalents are stocked locally.
+ * 1. MacSunny local inventory
+ * 2. 90-day MongoDB cache
+ * 3. Nexar Supply GraphQL
+ * 4. Mouser Search API V2 fallback
+ * 5. Cache verified technical data/replacements
+ * 6. Cross-check alternatives against MacSunny inventory
+ *
+ * AllDatasheet remains manual-reference only because its API was discontinued.
  */
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
-    const { query, includeExternal = true } = await request.json();
 
+    const { query, includeExternal = true } = await request.json();
     if (!query || typeof query !== 'string') {
       return NextResponse.json(
         { success: false, error: 'Search query required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -73,42 +97,48 @@ export async function POST(request: NextRequest) {
     if (!searchTerm || searchTerm.length > 120) {
       return NextResponse.json(
         { success: false, error: 'Invalid search query' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const safeSearch = escapeRegex(searchTerm);
     const adminAuthenticated = (await cookies()).get('ms_admin')?.value === '1';
-    const publicExternalEnabled = process.env.NEXAR_PUBLIC_LOOKUP_ENABLED === 'true';
-    const allDatasheetPublicEnabled = process.env.ALLDATASHEET_PUBLIC_LOOKUP_ENABLED === 'true';
-    const externalLookupAllowed =
-      isNexarConfigured() && (adminAuthenticated || publicExternalEnabled);
-    const allDatasheetLookupAllowed =
-      isAllDatasheetConfigured() && (adminAuthenticated || allDatasheetPublicEnabled);
+
+    const nexarPublicEnabled = process.env.NEXAR_PUBLIC_LOOKUP_ENABLED === 'true';
+    const mouserPublicEnabled = process.env.MOUSER_PUBLIC_LOOKUP_ENABLED === 'true';
+
+    const nexarLookupAllowed =
+      isNexarConfigured() && (adminAuthenticated || nexarPublicEnabled);
+    const mouserLookupAllowed =
+      isMouserConfigured() && (adminAuthenticated || mouserPublicEnabled);
 
     const results: any = {
       query: searchTerm,
       found_in_inventory: [],
       cached_equivalents: null,
       external_equivalents: null,
-      external_datasheet: null,
-      datasheet_reference: {
+      external_mouser: null,
+      manual_reference: {
         provider: 'AllDatasheet',
-        url: allDatasheetReferenceUrl(searchTerm),
-        api_configured: isAllDatasheetConfigured(),
+        mode: 'manual',
+        url: allDatasheetManualReferenceUrl(searchTerm),
       },
-      external_provider: {
-        name: 'Nexar',
-        configured: isNexarConfigured(),
-        public_lookup_enabled: publicExternalEnabled,
-        lookup_allowed: externalLookupAllowed,
+      external_providers: {
+        nexar: {
+          configured: isNexarConfigured(),
+          lookup_allowed: nexarLookupAllowed,
+          public_lookup_enabled: nexarPublicEnabled,
+        },
+        mouser: {
+          configured: isMouserConfigured(),
+          lookup_allowed: mouserLookupAllowed,
+          public_lookup_enabled: mouserPublicEnabled,
+        },
       },
       strategy: [],
     };
 
-    // STEP 1: MacSunny inventory first.
     results.strategy.push('local_inventory');
-
     const localProducts = await ProductModel.find({
       $or: [
         { sku: { $regex: safeSearch, $options: 'i' } },
@@ -134,176 +164,208 @@ export async function POST(request: NextRequest) {
       source: 'local',
     }));
 
-    // STEP 2: Cached equivalents.
     results.strategy.push('cache_check');
-
     let cachedEquiv = await EquivalentModel.findOne({
-      primary_sku: { $regex: new RegExp(`^${safeSearch}$`, 'i') },
+      primary_sku: { $regex: new RegExp('^' + safeSearch + '$', 'i') },
       expires_at: { $gt: new Date() },
     });
 
-    if (cachedEquiv && cachedEquiv.source === 'nexar') {
+    if (cachedEquiv && ['nexar', 'mouser'].includes(String(cachedEquiv.source || ''))) {
       const validKeys = new Set(lookupAliases(searchTerm).map(normalizePartKey));
-      const cachedKey = normalizePartKey(String(cachedEquiv.primary_mpn || cachedEquiv.primary_sku || ''));
+      const cachedKey = normalizePartKey(
+        cachedEquiv.primary_mpn || cachedEquiv.primary_sku || '',
+      );
+
       if (!validKeys.has(cachedKey)) {
         await EquivalentModel.deleteOne({ _id: cachedEquiv._id });
         results.strategy.push('invalid_cache_removed');
         cachedEquiv = null;
       }
     }
+
     if (cachedEquiv) {
       const cacheAgeDays = Math.floor(
-        (Date.now() - cachedEquiv.cached_at.getTime()) / (24 * 60 * 60 * 1000)
+        (Date.now() - cachedEquiv.cached_at.getTime()) / (24 * 60 * 60 * 1000),
       );
 
       results.cached_equivalents = {
         primary_sku: cachedEquiv.primary_sku,
         primary_mpn: cachedEquiv.primary_mpn || cachedEquiv.primary_sku,
-        primary_description: cachedEquiv.primary_description || cachedEquiv.primary_name || '',
+        primary_description:
+          cachedEquiv.primary_description || cachedEquiv.primary_name || '',
         primary_manufacturer: cachedEquiv.primary_manufacturer || '',
         primary_datasheet_url: cachedEquiv.primary_datasheet_url || '',
         primary_reference_url: cachedEquiv.primary_reference_url || '',
         primary_specs: cachedEquiv.primary_specs || {},
-        equivalents: cachedEquiv.equivalents,
+        equivalents: cachedEquiv.equivalents || [],
         source: cachedEquiv.source,
         cached_at: cachedEquiv.cached_at,
         cache_age_days: cacheAgeDays,
         expires_in_days: Math.max(
           0,
-          Math.floor((cachedEquiv.expires_at.getTime() - Date.now()) / (24 * 60 * 60 * 1000))
+          Math.floor(
+            (cachedEquiv.expires_at.getTime() - Date.now()) /
+              (24 * 60 * 60 * 1000),
+          ),
         ),
       };
 
-      await appendLocalEquivalentMatches(results, cachedEquiv.equivalents, searchTerm);
+      await appendLocalEquivalentMatches(
+        results,
+        cachedEquiv.equivalents || [],
+        searchTerm,
+      );
     }
 
-    // STEP 3: Nexar external search only on cache miss.
+    let externalRecord: any = null;
     let nexarSourceFound = false;
-    if (!cachedEquiv && includeExternal && externalLookupAllowed) {
+
+    if (!cachedEquiv && includeExternal && nexarLookupAllowed) {
       results.strategy.push('nexar_api');
 
       try {
         const nexarResult = await searchNexarEquivalents(searchTerm);
-        const equivalents = nexarResult.equivalents;
-
         if (nexarResult.sourceFound) {
           nexarSourceFound = true;
-          results.external_equivalents = {
+          externalRecord = {
             primary_sku: searchTerm,
-            primary_mpn: nexarResult.source.mpn || nexarResult.resolvedQuery || searchTerm,
+            primary_mpn:
+              nexarResult.source.mpn || nexarResult.resolvedQuery || searchTerm,
             primary_description: nexarResult.source.description || '',
             primary_manufacturer: nexarResult.source.manufacturer || '',
+            primary_datasheet_url: '',
+            primary_reference_url: '',
             primary_specs: nexarResult.source.specs || {},
-            equivalents,
+            equivalents: normalizeEquivalents(nexarResult.equivalents || []),
             source: 'nexar',
-            count: equivalents.length,
           };
 
-          // STEP 4: Cache identified Nexar parts even when similarParts is empty.
-          // This prevents repeated allowance use for the same lookup and preserves
-          // technical data for storefront enrichment.
-          results.strategy.push('cache_save');
-
-          await EquivalentModel.findOneAndUpdate(
-            { primary_sku: searchTerm },
-            {
-              primary_sku: searchTerm,
-              primary_mpn: nexarResult.source.mpn || nexarResult.resolvedQuery || searchTerm,
-              primary_name: nexarResult.source.description || nexarResult.source.mpn || searchTerm,
-              primary_description: nexarResult.source.description || '',
-              primary_manufacturer: nexarResult.source.manufacturer || '',
-              primary_specs: nexarResult.source.specs || {},
-              equivalents: equivalents.map((equivalent) => ({
-                mpn: equivalent.mpn,
-                manufacturer: equivalent.manufacturer,
-                description: equivalent.description,
-                specs: equivalent.specs,
-                in_stock_external: equivalent.in_stock_external,
-                distributor: equivalent.distributor,
-                compatibility: 1.0,
-              })),
-              source: 'nexar',
-              cached_at: new Date(),
-              expires_at: new Date(Date.now() + EQUIVALENT_CACHE_TTL_MS),
-            },
-            { upsert: true, new: true }
-          );
-
-          // STEP 5: Surface equivalents already sold by MacSunny.
-          if (equivalents.length > 0) {
-            await appendLocalEquivalentMatches(results, equivalents, searchTerm);
-          }
+          results.external_equivalents = {
+            ...externalRecord,
+            count: externalRecord.equivalents.length,
+          };
         }
       } catch (error: any) {
         console.error('Nexar equivalent search failed:', error);
-        results.external_error = error?.message || 'Nexar external search failed';
+        results.nexar_error = error?.message || 'Nexar external search failed';
       }
     }
 
-    // STEP 4: AllDatasheet technical/datasheet fallback.
-    // This provider complements Nexar for legacy parts. It does not scrape
-    // AllDatasheet pages and does not advertise external sellers.
-    const needsDatasheetFallback =
+    const shouldTryMouser =
       !cachedEquiv &&
       includeExternal &&
-      allDatasheetLookupAllowed &&
-      (!nexarSourceFound || (results.external_equivalents?.equivalents || []).length === 0);
+      mouserLookupAllowed &&
+      (!nexarSourceFound || (externalRecord?.equivalents || []).length === 0);
 
-    if (needsDatasheetFallback) {
-      results.strategy.push('alldatasheet_api');
+    if (shouldTryMouser) {
+      results.strategy.push('mouser_api');
 
       try {
-        const allDatasheetResult = await searchAllDatasheetPart(searchTerm);
+        const mouserResult = await searchMouserComponent(searchTerm);
 
-        if (allDatasheetResult.found) {
-          results.external_datasheet = {
+        if (mouserResult.found) {
+          const mouserEquivalents = normalizeEquivalents(
+            mouserResult.equivalents || [],
+          );
+
+          results.external_mouser = {
             primary_sku: searchTerm,
-            primary_mpn: allDatasheetResult.mpn || searchTerm,
-            primary_description: allDatasheetResult.description || '',
-            primary_manufacturer: allDatasheetResult.manufacturer || '',
-            primary_specs: allDatasheetResult.specs || {},
-            primary_datasheet_url: allDatasheetResult.datasheetUrl || '',
-            primary_reference_url: allDatasheetResult.referenceUrl,
-            source: 'alldatasheet',
+            primary_mpn:
+              mouserResult.source.mpn || mouserResult.resolvedQuery || searchTerm,
+            primary_description: mouserResult.source.description || '',
+            primary_manufacturer: mouserResult.source.manufacturer || '',
+            primary_datasheet_url: mouserResult.source.datasheetUrl || '',
+            primary_reference_url: mouserResult.source.productUrl || '',
+            primary_specs: mouserResult.source.specs || {},
+            equivalents: mouserEquivalents,
+            source: 'mouser',
           };
 
-          const existingExternal = results.external_equivalents;
-          if (existingExternal) {
-            await EquivalentModel.findOneAndUpdate(
-              { primary_sku: searchTerm },
-              {
-                $set: {
-                  primary_datasheet_url: allDatasheetResult.datasheetUrl || '',
-                  primary_reference_url: allDatasheetResult.referenceUrl,
-                },
+          if (externalRecord) {
+            externalRecord = {
+              ...externalRecord,
+              primary_description:
+                externalRecord.primary_description ||
+                mouserResult.source.description ||
+                '',
+              primary_manufacturer:
+                externalRecord.primary_manufacturer ||
+                mouserResult.source.manufacturer ||
+                '',
+              primary_datasheet_url:
+                mouserResult.source.datasheetUrl ||
+                externalRecord.primary_datasheet_url ||
+                '',
+              primary_reference_url:
+                mouserResult.source.productUrl ||
+                externalRecord.primary_reference_url ||
+                '',
+              primary_specs: {
+                ...(mouserResult.source.specs || {}),
+                ...(externalRecord.primary_specs || {}),
               },
-              { new: true }
-            );
+              equivalents:
+                (externalRecord.equivalents || []).length > 0
+                  ? externalRecord.equivalents
+                  : mouserEquivalents,
+            };
           } else {
-            await EquivalentModel.findOneAndUpdate(
-              { primary_sku: searchTerm },
-              {
-                primary_sku: searchTerm,
-                primary_mpn: allDatasheetResult.mpn || searchTerm,
-                primary_name: allDatasheetResult.description || allDatasheetResult.mpn || searchTerm,
-                primary_description: allDatasheetResult.description || '',
-                primary_manufacturer: allDatasheetResult.manufacturer || '',
-                primary_datasheet_url: allDatasheetResult.datasheetUrl || '',
-                primary_reference_url: allDatasheetResult.referenceUrl,
-                primary_specs: allDatasheetResult.specs || {},
-                equivalents: [],
-                source: 'alldatasheet',
-                cached_at: new Date(),
-                expires_at: new Date(Date.now() + EQUIVALENT_CACHE_TTL_MS),
-              },
-              { upsert: true, new: true }
-            );
-            results.strategy.push('cache_save');
+            externalRecord = {
+              ...results.external_mouser,
+              source: 'mouser',
+            };
           }
+
+          results.external_equivalents = {
+            ...externalRecord,
+            count: (externalRecord.equivalents || []).length,
+          };
         }
       } catch (error: any) {
-        console.error('AllDatasheet lookup failed:', error);
-        results.alldatasheet_error = error?.message || 'AllDatasheet lookup failed';
+        console.error('Mouser lookup failed:', error);
+        results.mouser_error = error?.message || 'Mouser external search failed';
+      }
+    }
+
+    if (!cachedEquiv && externalRecord) {
+      results.strategy.push('cache_save');
+
+      await EquivalentModel.findOneAndUpdate(
+        { primary_sku: searchTerm },
+        {
+          primary_sku: searchTerm,
+          primary_mpn: externalRecord.primary_mpn || searchTerm,
+          primary_name:
+            externalRecord.primary_description ||
+            externalRecord.primary_mpn ||
+            searchTerm,
+          primary_description: externalRecord.primary_description || '',
+          primary_manufacturer: externalRecord.primary_manufacturer || '',
+          primary_datasheet_url: externalRecord.primary_datasheet_url || '',
+          primary_reference_url: externalRecord.primary_reference_url || '',
+          primary_specs: externalRecord.primary_specs || {},
+          equivalents: (externalRecord.equivalents || []).map((equivalent: any) => ({
+            mpn: equivalent.mpn,
+            manufacturer: equivalent.manufacturer || '',
+            description: equivalent.description || '',
+            specs: equivalent.specs || {},
+            in_stock_external: Boolean(equivalent.in_stock_external),
+            distributor: equivalent.distributor || externalRecord.source,
+            compatibility: 1.0,
+          })),
+          source: externalRecord.source === 'mouser' ? 'mouser' : 'nexar',
+          cached_at: new Date(),
+          expires_at: new Date(Date.now() + EQUIVALENT_CACHE_TTL_MS),
+        },
+        { upsert: true, new: true },
+      );
+
+      if ((externalRecord.equivalents || []).length > 0) {
+        await appendLocalEquivalentMatches(
+          results,
+          externalRecord.equivalents,
+          searchTerm,
+        );
       }
     }
 
@@ -313,15 +375,18 @@ export async function POST(request: NextRequest) {
       has_cached_data: Boolean(results.cached_equivalents),
       has_external_data: Boolean(results.external_equivalents),
       cache_used: Boolean(results.cached_equivalents),
-      api_called: results.strategy.includes('nexar_api') || results.strategy.includes('alldatasheet_api'),
+      api_called:
+        results.strategy.includes('nexar_api') ||
+        results.strategy.includes('mouser_api'),
       nexar_api_called: results.strategy.includes('nexar_api'),
-      alldatasheet_api_called: results.strategy.includes('alldatasheet_api'),
-      external_configured: isNexarConfigured() || isAllDatasheetConfigured(),
-      external_lookup_allowed: externalLookupAllowed || allDatasheetLookupAllowed,
-      public_external_lookup_enabled: publicExternalEnabled || allDatasheetPublicEnabled,
+      mouser_api_called: results.strategy.includes('mouser_api'),
+      external_configured: isNexarConfigured() || isMouserConfigured(),
+      external_lookup_allowed: nexarLookupAllowed || mouserLookupAllowed,
+      public_external_lookup_enabled:
+        nexarPublicEnabled || mouserPublicEnabled,
       nexar_configured: isNexarConfigured(),
-      alldatasheet_configured: isAllDatasheetConfigured(),
-      external_provider: 'nexar+alldatasheet',
+      mouser_configured: isMouserConfigured(),
+      external_provider: 'nexar+mouser',
     };
 
     return NextResponse.json({
@@ -333,7 +398,7 @@ export async function POST(request: NextRequest) {
     console.error('Equivalent search error:', error);
     return NextResponse.json(
       { success: false, error: error?.message || 'Equivalent search failed' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -342,11 +407,11 @@ export async function GET() {
   return NextResponse.json({
     success: true,
     info: 'POST with { "query": "COMPONENT_SKU" } to search for equivalents',
-    provider: 'nexar+alldatasheet',
+    provider: 'nexar+mouser',
     nexar_configured: isNexarConfigured(),
-    alldatasheet_configured: isAllDatasheetConfigured(),
+    mouser_configured: isMouserConfigured(),
     public_lookup_enabled:
       process.env.NEXAR_PUBLIC_LOOKUP_ENABLED === 'true' ||
-      process.env.ALLDATASHEET_PUBLIC_LOOKUP_ENABLED === 'true',
+      process.env.MOUSER_PUBLIC_LOOKUP_ENABLED === 'true',
   });
 }
