@@ -777,33 +777,52 @@ p, span, div {
 }
 
 
-/* Theme-aware voice status bar. Base surface follows the published storefront theme. */
+/* Voice status bar: accent owns the body; theme owns the boundary. */
 .voice-status-bar {
-  --voice-bar-fill: color-mix(in srgb, var(--storefront-panel-solid) 86%, var(--accent-color) 14%);
-  --voice-bar-border: color-mix(in srgb, var(--storefront-border) 72%, var(--accent-color) 28%);
-  color: var(--accent-color);
+  --voice-bar-fill: var(--accent-color);
+  --voice-bar-border: var(--storefront-border);
+  --voice-bar-shadow: color-mix(in srgb, var(--storefront-border) 52%, transparent);
 }
 
-.voice-status-bar[data-voice-state='active'] {
-  --voice-bar-fill: color-mix(in srgb, var(--storefront-panel-deep) 72%, var(--accent-color) 28%);
-  --voice-bar-border: color-mix(in srgb, var(--storefront-border) 52%, var(--accent-color) 48%);
-  color: var(--accent-color);
+[data-theme='light'] .voice-status-bar {
+  --voice-bar-border: color-mix(in srgb, var(--storefront-text) 38%, var(--storefront-border) 62%);
+  --voice-bar-shadow: color-mix(in srgb, var(--storefront-text) 20%, transparent);
 }
 
-.voice-status-bar[data-voice-state='connecting'] {
-  --voice-bar-fill: color-mix(in srgb, var(--storefront-panel-solid) 78%, #f59e0b 22%);
-  --voice-bar-border: color-mix(in srgb, var(--storefront-border) 58%, #f59e0b 42%);
-  color: color-mix(in srgb, var(--storefront-text) 56%, #f59e0b 44%);
+[data-theme='dark'] .voice-status-bar {
+  --voice-bar-border: color-mix(in srgb, var(--storefront-text) 48%, var(--storefront-border) 52%);
+  --voice-bar-shadow: color-mix(in srgb, #000000 72%, transparent);
 }
 
-.voice-status-bar[data-voice-state='muted'] {
-  --voice-bar-fill: color-mix(in srgb, var(--storefront-panel-deep) 72%, #f59e0b 28%);
-  --voice-bar-border: color-mix(in srgb, var(--storefront-border) 55%, #f59e0b 45%);
-  color: color-mix(in srgb, var(--storefront-text) 48%, #f59e0b 52%);
+[data-theme='premium'] .voice-status-bar {
+  --voice-bar-border: color-mix(in srgb, var(--storefront-text) 42%, var(--storefront-border) 58%);
+  --voice-bar-shadow: color-mix(in srgb, var(--storefront-border) 58%, transparent);
 }
 
-.voice-status-bar[data-voice-state='error'] {
-  --voice-bar-fill: color-mix(in srgb, var(--storefront-panel-solid) 82%, #dc2626 18%);
-  --voice-bar-border: color-mix(in srgb, var(--storefront-border) 58%, #dc2626 42%);
-  color: color-mix(in srgb, var(--storefront-text) 48%, #dc2626 52%);
+.voice-status-bar svg {
+  filter: drop-shadow(0 6px 12px var(--voice-bar-shadow));
+}
+
+.voice-status-bar[data-voice-state='active'] svg {
+  filter:
+    drop-shadow(0 6px 12px var(--voice-bar-shadow))
+    drop-shadow(0 0 8px color-mix(in srgb, var(--accent-color) 70%, transparent));
+}
+
+.voice-status-bar[data-voice-state='connecting'] svg {
+  filter:
+    drop-shadow(0 6px 12px var(--voice-bar-shadow))
+    drop-shadow(0 0 7px color-mix(in srgb, #f59e0b 55%, transparent));
+}
+
+.voice-status-bar[data-voice-state='muted'] svg {
+  filter:
+    drop-shadow(0 6px 12px var(--voice-bar-shadow))
+    drop-shadow(0 0 6px color-mix(in srgb, #f59e0b 48%, transparent));
+}
+
+.voice-status-bar[data-voice-state='error'] svg {
+  filter:
+    drop-shadow(0 6px 12px var(--voice-bar-shadow))
+    drop-shadow(0 0 6px color-mix(in srgb, #dc2626 50%, transparent));
 }
