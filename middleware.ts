@@ -1,7 +1,8 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { adminCookieName, verifyAdminSessionToken } from '@/app/lib/adminSession';
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   
   // Allow these routes without authentication
@@ -16,9 +17,9 @@ export function middleware(req: NextRequest) {
   
   // If it's an admin area and NOT a public route, check authentication
   if (isAdminArea && !isPublicRoute) {
-    const cookie = req.cookies.get('ms_admin')?.value;
+    const authenticated = await verifyAdminSessionToken(req.cookies.get(adminCookieName())?.value);
     
-    if (cookie !== '1') {
+    if (!authenticated) {
       // Not authenticated - redirect to login
       const url = req.nextUrl.clone();
       url.pathname = '/admin/login';
