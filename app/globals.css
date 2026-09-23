@@ -715,3 +715,18 @@ p, span, div {
   .search-deck select { border-color: var(--storefront-border-soft); border-radius: var(--ms-radius-control); background: var(--storefront-panel); color: var(--storefront-text); }
   .product-detail { border-radius: var(--ms-radius-card); }
 }
+
+
+/* Mobile promo isolation: keep the video on a clean compositor surface. */
+@media (max-width: 640px) {
+  body.frontier-promo-open {
+    background: #050811 !important;
+  }
+
+  body.frontier-promo-open .site-header,
+  body.frontier-promo-open .site-content-shell,
+  body.frontier-promo-open #site-footer,
+  body.frontier-promo-open .compliance-warning {
+    display: none !important;
+  }
+}
