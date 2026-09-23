@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getMongoDb } from '@/app/lib/mongodb';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 
 export async function GET() {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   // Default empty stats
   const emptyStats = {
     totalVisits: 0,
