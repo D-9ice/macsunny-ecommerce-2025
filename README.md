@@ -24,15 +24,13 @@ A modern, full-featured e-commerce platform built with Next.js 15, TypeScript, M
 
 ## 🛠️ Tech Stack
 
-- **Framework:** Next.js 15.5.4 with App Router
+- **Framework:** Next.js 15.5.24 with App Router
 - **Language:** TypeScript 5
 - **Styling:** Tailwind CSS 4
 - **Databases:** 
   - MongoDB with Mongoose (primary)
   - Prisma ORM (optional/dual support)
-- **Authentication:** 
-  - NextAuth.js 4 with JWT
-  - Custom bcrypt-based admin auth
+- **Authentication:** Signed, time-limited HMAC admin sessions with bcrypt password verification
 - **Payment:** Paystack (@paystack/inline-js)
 - **State Management:** Zustand
 - **Data Fetching:** TanStack React Query
@@ -128,10 +126,11 @@ npm start
 1. **Keyboard Shortcut:** Press `Ctrl+Shift+A` (or `Cmd+Shift+A` on Mac) from the homepage
 2. **Direct URL:** Navigate to `/admin/login`
 
-### Default Credentials
+### Admin Credentials
 
-- **Password:** Set in `.env.local` as `ADMIN_PASSWORD`
-- Default: `admin123` (change this immediately!)
+- Admin credentials are database-backed and bcrypt-hashed.
+- There is intentionally **no default production password** and no automatic default-account creation.
+- Keep admin credentials and all signing secrets out of source control.
 
 ### Admin Routes
 
@@ -174,8 +173,8 @@ macsunny/
 ## 🔒 Security Features
 
 - **bcrypt Password Hashing** - Secure password storage
-- **JWT Authentication** - Secure session management with NextAuth
-- **HTTP-only Cookies** - Prevent XSS attacks
+- **Signed Admin Sessions** - HMAC-signed, expiring server-verified sessions
+- **HTTP-only Cookies** - Session cookies are inaccessible to browser JavaScript
 - **Input Validation** - Zod schema validation on all inputs
 - **Environment Variables** - Sensitive data protection
 - **CORS Protection** - Configured for production
