@@ -36,7 +36,6 @@ export default function FrontierPromoAd() {
   const sessionStartRef = useRef(0);
   const initialTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const preloadVideoRef = useRef<HTMLVideoElement | null>(null);
   const bufferingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startupFallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -59,35 +58,6 @@ export default function FrontierPromoAd() {
     closePromo();
     window.open(FRONTIER_URL, '_blank', 'noopener,noreferrer');
   };
-
-  useEffect(() => {
-    if (privateRoute) return;
-
-    const connection = (navigator as Navigator & {
-      connection?: { saveData?: boolean; effectiveType?: string };
-    }).connection;
-
-    // Respect explicit data-saver mode. Otherwise start warming the small
-    // promo video before the 30-second popup so mobile does not begin from
-    // a cold network request when the dialog appears.
-    if (connection?.saveData) return;
-
-    const timer = window.setTimeout(() => {
-      const preloadVideo = document.createElement('video');
-      preloadVideo.preload = 'auto';
-      preloadVideo.muted = true;
-      preloadVideo.defaultMuted = true;
-      preloadVideo.playsInline = true;
-      preloadVideo.src = VIDEO_SRC;
-      preloadVideo.load();
-      preloadVideoRef.current = preloadVideo;
-    }, 8_000);
-
-    return () => {
-      window.clearTimeout(timer);
-      preloadVideoRef.current = null;
-    };
-  }, [privateRoute]);
 
   useEffect(() => {
     if (privateRoute) {
