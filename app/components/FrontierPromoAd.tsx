@@ -153,7 +153,7 @@ export default function FrontierPromoAd() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="frontier-promo-title"
-        className="relative w-full max-w-4xl overflow-hidden rounded-2xl border border-cyan-300/30 bg-[#050811] shadow-[0_30px_100px_rgba(0,0,0,.75)] sm:rounded-3xl"
+        className="relative w-full max-w-4xl rounded-2xl border border-cyan-300/30 bg-[#050811] shadow-[0_30px_100px_rgba(0,0,0,.75)] sm:rounded-3xl"
       >
         <h2 id="frontier-promo-title" className="sr-only">Frontier DevConsults promotional message</h2>
         <button
@@ -167,7 +167,7 @@ export default function FrontierPromoAd() {
 
         {!videoFailed ? (
           <div
-            className="relative aspect-video cursor-pointer overflow-hidden bg-black"
+            className="relative aspect-video cursor-pointer bg-black"
             onClick={openFrontier}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {
