@@ -4,6 +4,7 @@ import { connectDB, ProductModel } from '@/app/lib/mongodb';
 import { isNexarConfigured, searchNexarEquivalents } from '@/app/lib/nexar';
 import { isMouserConfigured, searchMouserComponent } from '@/app/lib/mouser';
 import { EquivalentModel, EQUIVALENT_CACHE_TTL_MS } from '@/app/lib/equivalents';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 
 function escapeRegex(value: string) {
   return value.replace(/[|\\{}()[\]^$+*?.-]/g, '\\$&');
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     const safeSearch = escapeRegex(searchTerm);
-    const adminAuthenticated = (await cookies()).get('ms_admin')?.value === '1';
+    const adminAuthenticated = await isAdminAuthenticated();
 
     const nexarPublicEnabled = process.env.NEXAR_PUBLIC_LOOKUP_ENABLED === 'true';
     const mouserPublicEnabled = process.env.MOUSER_PUBLIC_LOOKUP_ENABLED === 'true';
