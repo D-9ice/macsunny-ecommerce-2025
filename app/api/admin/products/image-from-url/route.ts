@@ -9,21 +9,61 @@ import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 export const runtime = 'nodejs';
 
 function privateAddress(address: string) {
-  if (address === '::1' || address === '0.0.0.0' || address.startsWith('fc') || address.startsWith('fd') || address.startsWith('fe80:')) return true;
-  if (isIP(address) === 4) {
-    const [a, b] = address.split('.').map(Number);
-    return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
+  const normalized = address.toLowerCase();
+  if (
+    normalized === '::' ||
+    normalized === '::1' ||
+    normalized.startsWith('fc') ||
+    normalized.startsWith('fd') ||
+    normalized.startsWith('fe80:') ||
+    normalized.startsWith('fec0:') ||
+    normalized.startsWith('ff')
+  ) return true;
+
+  if (normalized.startsWith('::ffff:')) {
+    return privateAddress(normalized.slice('::ffff:'.length));
   }
+
+  if (isIP(normalized) === 4) {
+    const [a, b] = normalized.split('.').map(Number);
+    return (
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 0) ||
+      (a === 192 && b === 168) ||
+      (a === 198 && (b === 18 || b === 19)) ||
+      a >= 224
+    );
+  }
+
   return false;
+}
+
+async function assertPublicImageUrl(url: URL, requireHttps = false) {
+  if (
+    !['http:', 'https:'].includes(url.protocol) ||
+    (requireHttps && url.protocol !== 'https:') ||
+    url.username ||
+    url.password
+  ) {
+    throw new Error('Invalid image URL');
+  }
+
+  const addresses = await lookup(url.hostname, { all: true });
+  if (!addresses.length || addresses.some(({ address }) => privateAddress(address))) {
+    throw new Error('Image host is not allowed');
+  }
 }
 
 async function downloadImage(rawUrl: string, sourceUrl = '') {
   let url = new URL(rawUrl);
   let response: Response | null = null;
   for (let redirects = 0; redirects < 4; redirects += 1) {
-    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error('Invalid image URL');
-    const addresses = await lookup(url.hostname, { all: true });
-    if (!addresses.length || addresses.some(({ address }) => privateAddress(address))) throw new Error('Image host is not allowed');
+    await assertPublicImageUrl(url);
     response = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(12_000), headers: { Accept: 'image/*', 'User-Agent': 'Mozilla/5.0 (compatible; MacSunny/1.0)', ...(sourceUrl ? { Referer: sourceUrl } : {}) } });
     if (![301, 302, 303, 307, 308].includes(response.status)) break;
     const location = response.headers.get('location');
@@ -70,7 +110,8 @@ export async function POST(request: Request) {
     if (remoteFallback?.sku) {
       try {
         const directUrl = new URL(remoteFallback.url);
-        if (['http:', 'https:'].includes(directUrl.protocol)) {
+        await assertPublicImageUrl(directUrl, true);
+        {
           await connectDB();
           const product = await ProductModel.findOne({ sku: remoteFallback.sku });
           if (product) {
