@@ -193,14 +193,18 @@ export async function POST(request: Request) {
  */
 export async function PUT(request: Request) {
   if (!(await isAdmin())) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+  if (!sameOrigin(request)) return NextResponse.json({ success: false, message: 'Unexpected request origin.' }, { status: 403 });
+  if (!rateAllowed(request, 'admin-orders-write', 40, 5 * 60_000)) return NextResponse.json({ success: false, message: 'Too many order update requests.' }, { status: 429 });
   try {
+    const parsed = await readBoundedJson(request, 8 * 1024);
+    if (!parsed.ok) return NextResponse.json({ success: false, message: parsed.message }, { status: parsed.status });
     await connectDB();
-    const body = await request.json();
-    const { orderId, status } = body;
+    const { orderId, status } = parsed.value;
 
-    if (!orderId || !status) {
+    const allowedStatuses = new Set(['pending', 'processing', 'completed', 'cancelled']);
+    if (!orderId || !status || !allowedStatuses.has(String(status))) {
       return NextResponse.json(
-        { success: false, message: 'Order ID and status are required' },
+        { success: false, message: 'A valid order ID and status are required' },
         { status: 400 }
       );
     }
@@ -233,8 +237,10 @@ export async function PUT(request: Request) {
 /**
  * ✅ DELETE — Delete completed and cancelled orders
  */
-export async function DELETE() {
+export async function DELETE(request: Request) {
   if (!(await isAdmin())) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+  if (!sameOrigin(request)) return NextResponse.json({ success: false, message: 'Unexpected request origin.' }, { status: 403 });
+  if (!rateAllowed(request, 'admin-orders-delete', 10, 10 * 60_000)) return NextResponse.json({ success: false, message: 'Too many order deletion requests.' }, { status: 429 });
   try {
     await connectDB();
     
