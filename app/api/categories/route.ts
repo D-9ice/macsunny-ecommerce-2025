@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { connectDB, CategoryModel } from '@/app/lib/mongodb';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 
-const isAdmin = async () => (await cookies()).get('ms_admin')?.value === '1';
+const isAdmin = async () => await isAdminAuthenticated();
 
 // Category Manager is the single source of truth.
 export async function GET() {
