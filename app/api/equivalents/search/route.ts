@@ -5,6 +5,7 @@ import { isNexarConfigured, searchNexarEquivalents } from '@/app/lib/nexar';
 import { isMouserConfigured, searchMouserComponent } from '@/app/lib/mouser';
 import { EquivalentModel, EQUIVALENT_CACHE_TTL_MS } from '@/app/lib/equivalents';
 import { isAdminAuthenticated } from '@/app/lib/adminAuth';
+import { rateAllowed, readBoundedJson } from '@/app/lib/requestSecurity';
 
 function escapeRegex(value: string) {
   return value.replace(/[|\\{}()[\]^$+*?.-]/g, '\\$&');
@@ -84,9 +85,17 @@ function normalizeEquivalents(items: any[]) {
  */
 export async function POST(request: NextRequest) {
   try {
+    if (!rateAllowed(request, 'equivalent-search', 60, 5 * 60_000)) {
+      return NextResponse.json({ success: false, error: 'Too many equivalent-search requests. Please wait a moment.' }, { status: 429 });
+    }
+    const parsed = await readBoundedJson(request, 8 * 1024);
+    if (!parsed.ok) {
+      return NextResponse.json({ success: false, error: parsed.message }, { status: parsed.status });
+    }
+
     await connectDB();
 
-    const { query, includeExternal = true } = await request.json();
+    const { query, includeExternal = true } = parsed.value;
     if (!query || typeof query !== 'string') {
       return NextResponse.json(
         { success: false, error: 'Search query required' },
