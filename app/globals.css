@@ -775,3 +775,35 @@ p, span, div {
     animation: none;
   }
 }
+
+
+/* Theme-aware voice status bar. Base surface follows the published storefront theme. */
+.voice-status-bar {
+  --voice-bar-fill: color-mix(in srgb, var(--storefront-panel-solid) 86%, var(--accent-color) 14%);
+  --voice-bar-border: color-mix(in srgb, var(--storefront-border) 72%, var(--accent-color) 28%);
+  color: var(--accent-color);
+}
+
+.voice-status-bar[data-voice-state='active'] {
+  --voice-bar-fill: color-mix(in srgb, var(--storefront-panel-deep) 72%, var(--accent-color) 28%);
+  --voice-bar-border: color-mix(in srgb, var(--storefront-border) 52%, var(--accent-color) 48%);
+  color: var(--accent-color);
+}
+
+.voice-status-bar[data-voice-state='connecting'] {
+  --voice-bar-fill: color-mix(in srgb, var(--storefront-panel-solid) 78%, #f59e0b 22%);
+  --voice-bar-border: color-mix(in srgb, var(--storefront-border) 58%, #f59e0b 42%);
+  color: color-mix(in srgb, var(--storefront-text) 56%, #f59e0b 44%);
+}
+
+.voice-status-bar[data-voice-state='muted'] {
+  --voice-bar-fill: color-mix(in srgb, var(--storefront-panel-deep) 72%, #f59e0b 28%);
+  --voice-bar-border: color-mix(in srgb, var(--storefront-border) 55%, #f59e0b 45%);
+  color: color-mix(in srgb, var(--storefront-text) 48%, #f59e0b 52%);
+}
+
+.voice-status-bar[data-voice-state='error'] {
+  --voice-bar-fill: color-mix(in srgb, var(--storefront-panel-solid) 82%, #dc2626 18%);
+  --voice-bar-border: color-mix(in srgb, var(--storefront-border) 58%, #dc2626 42%);
+  color: color-mix(in srgb, var(--storefront-text) 48%, #dc2626 52%);
+}
