@@ -134,7 +134,7 @@ export default function EquivalentsManager() {
                 Customer live lookup is <strong>{publicLookupEnabled ? 'enabled' : 'disabled'}</strong>.
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                AllDatasheet is retained only as a manual legacy-component reference because its API service has been discontinued.
+                Manual research links are available below for AllDatasheet, Mouser, DigiKey, and Octopart. AllDatasheet remains legacy-reference only because its API service has been discontinued.
               </p>
             </div>
           </div>
@@ -161,7 +161,8 @@ export default function EquivalentsManager() {
           </form>
 
           <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-slate-500">Legacy reference:</span>
+            <span className="text-slate-500">Direct research:</span>
+
             <a
               href={
                 testSKU.trim()
@@ -170,9 +171,48 @@ export default function EquivalentsManager() {
               }
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-blue-300 hover:text-blue-200"
+              className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 font-semibold text-blue-300 hover:bg-blue-500/20 hover:text-blue-200"
             >
-              Search AllDatasheet directly ↗
+              AllDatasheet ↗
+            </a>
+
+            <a
+              href={
+                testSKU.trim()
+                  ? 'https://www.mouser.com/c/?q=' + encodeURIComponent(testSKU.trim())
+                  : 'https://www.mouser.com/'
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-1.5 font-semibold text-green-300 hover:bg-green-500/20 hover:text-green-200"
+            >
+              Mouser ↗
+            </a>
+
+            <a
+              href={
+                testSKU.trim()
+                  ? 'https://www.digikey.com/en/products?keywords=' + encodeURIComponent(testSKU.trim())
+                  : 'https://www.digikey.com/'
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 font-semibold text-red-300 hover:bg-red-500/20 hover:text-red-200"
+            >
+              DigiKey ↗
+            </a>
+
+            <a
+              href={
+                testSKU.trim()
+                  ? 'https://octopart.com/search?q=' + encodeURIComponent(testSKU.trim())
+                  : 'https://octopart.com/'
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 font-semibold text-amber-300 hover:bg-amber-500/20 hover:text-amber-200"
+            >
+              Octopart ↗
             </a>
           </div>
 
