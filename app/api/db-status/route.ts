@@ -3,9 +3,10 @@ import { cookies } from 'next/headers';
 import mongoose from 'mongoose';
 import os from 'os';
 import { connectDB, ProductModel, OrderModel, CategoryModel } from '@/app/lib/mongodb';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 
 export async function GET() {
-  if ((await cookies()).get('ms_admin')?.value !== '1') {
+  if (!(await isAdminAuthenticated())) {
     return NextResponse.json({ status: 'unauthorized' }, { status: 401 });
   }
 
