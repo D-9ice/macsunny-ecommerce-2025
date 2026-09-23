@@ -50,11 +50,11 @@ export async function GET() {
       memBytes,
       dbUptimeSec,
     });
-  } catch (error: any) {
-    console.error('❌ Failed to fetch DB status:', error.message);
+  } catch (error) {
+    console.error('db.status.failed', { error });
     return NextResponse.json(
-      { status: 'disconnected', message: error.message },
-      { status: 500 }
+      { status: 'disconnected', message: 'Database status is temporarily unavailable.' },
+      { status: 503, headers: { 'Cache-Control': 'no-store, max-age=0' } }
     );
   }
 }
