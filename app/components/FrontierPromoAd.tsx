@@ -29,15 +29,10 @@ export default function FrontierPromoAd() {
   const [open, setOpen] = useState(false);
   const [muted, setMuted] = useState(true);
   const [videoFailed, setVideoFailed] = useState(false);
-  const [videoBuffering, setVideoBuffering] = useState(false);
-  const [needsTapToPlay, setNeedsTapToPlay] = useState(false);
-  const [videoStarted, setVideoStarted] = useState(false);
   const lastActivityRef = useRef(Date.now());
   const sessionStartRef = useRef(0);
   const initialTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const bufferingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const startupFallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const privateRoute =
     pathname === '/admin' ||
@@ -147,53 +142,6 @@ export default function FrontierPromoAd() {
     };
   }, [open]);
 
-  const attemptVideoPlay = async (userInitiated = false, nextMuted = muted) => {
-    const video = videoRef.current;
-    if (!video || videoFailed) return;
-
-    video.muted = nextMuted;
-    video.defaultMuted = nextMuted;
-
-    if (userInitiated && video.readyState === HTMLMediaElement.HAVE_NOTHING) {
-      video.load();
-    }
-
-    try {
-      await video.play();
-      setNeedsTapToPlay(false);
-      setVideoBuffering(false);
-    } catch {
-      setVideoBuffering(false);
-      setNeedsTapToPlay(true);
-    }
-  };
-
-  useEffect(() => {
-    if (!open || videoFailed || !videoRef.current) return;
-
-    setVideoStarted(false);
-    setNeedsTapToPlay(false);
-    setVideoBuffering(true);
-    void attemptVideoPlay(false, true);
-
-    // Never leave mobile visitors trapped behind an indefinite spinner.
-    // If autoplay has not actually started within a few seconds, switch to
-    // an explicit user-gesture play action.
-    startupFallbackTimerRef.current = setTimeout(() => {
-      const video = videoRef.current;
-      if (!video || !video.paused) return;
-      setVideoBuffering(false);
-      setNeedsTapToPlay(true);
-    }, 4_000);
-
-    return () => {
-      if (startupFallbackTimerRef.current) {
-        clearTimeout(startupFallbackTimerRef.current);
-        startupFallbackTimerRef.current = null;
-      }
-    };
-  }, [open, videoFailed]);
-
   if (privateRoute || !open) return null;
 
   return (
@@ -240,61 +188,9 @@ export default function FrontierPromoAd() {
               playsInline
               preload="auto"
               controls={false}
-              disablePictureInPicture
-              onLoadStart={() => setVideoBuffering(true)}
-              onCanPlay={() => {
-                setVideoBuffering(false);
-                if (!videoStarted) void attemptVideoPlay(false, true);
-              }}
-              onPlaying={() => {
-                setVideoStarted(true);
-                setVideoBuffering(false);
-                setNeedsTapToPlay(false);
-                if (startupFallbackTimerRef.current) {
-                  clearTimeout(startupFallbackTimerRef.current);
-                  startupFallbackTimerRef.current = null;
-                }
-                if (bufferingTimerRef.current) {
-                  clearTimeout(bufferingTimerRef.current);
-                  bufferingTimerRef.current = null;
-                }
-              }}
-              onWaiting={() => {
-                if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current);
-                bufferingTimerRef.current = setTimeout(() => setVideoBuffering(true), 700);
-              }}
-              onStalled={() => {
-                if (videoStarted) setVideoBuffering(true);
-              }}
-              onError={() => {
-                setVideoBuffering(false);
-                setVideoFailed(true);
-              }}
-              className="h-full w-full object-cover"
+              onError={() => setVideoFailed(true)}
+              className="block h-full w-full"
             />
-
-            {(videoBuffering || needsTapToPlay) && (
-              <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-black/25">
-                {needsTapToPlay ? (
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setVideoBuffering(true);
-                      void attemptVideoPlay(true, muted);
-                    }}
-                    className="pointer-events-auto rounded-full border border-white/25 bg-black/80 px-5 py-3 text-sm font-bold text-white shadow-xl backdrop-blur"
-                    aria-label="Play promotional video"
-                  >
-                    Tap to Play
-                  </button>
-                ) : (
-                  <div className="rounded-full border border-white/20 bg-black/65 px-4 py-2 text-xs font-semibold text-white backdrop-blur">
-                    Loading video…
-                  </div>
-                )}
-              </div>
-            )}
             <button
               type="button"
               onClick={(event) => {
@@ -302,14 +198,8 @@ export default function FrontierPromoAd() {
                 const nextMuted = !muted;
                 setMuted(nextMuted);
 
-                const video = videoRef.current;
-                if (video) {
-                  video.muted = nextMuted;
-                  video.defaultMuted = nextMuted;
-                  if (video.paused) {
-                    setVideoBuffering(true);
-                    void attemptVideoPlay(true, nextMuted);
-                  }
+                if (videoRef.current) {
+                  videoRef.current.muted = nextMuted;
                 }
               }}
               className="absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full border border-white/20 bg-black/70 px-3 py-2 text-xs font-semibold text-white backdrop-blur"
