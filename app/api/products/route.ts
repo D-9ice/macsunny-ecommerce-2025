@@ -3,9 +3,10 @@ import { cookies } from 'next/headers';
 import { connectDB, ProductModel, CategoryModel } from '@/app/lib/mongodb';
 import { EquivalentModel } from '@/app/lib/equivalents';
 import { deleteBlobSafely } from '@/lib/images';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 
 const projection = 'sku name category price imageUrl imageAlt description quantity manufacturer mpn package pinCount datasheetUrl specifications verificationSources verificationConfidence verificationStatus imageSourceUrl createdAt updatedAt';
-const isAdmin = async () => (await cookies()).get('ms_admin')?.value === '1';
+const isAdmin = async () => await isAdminAuthenticated();
 const safeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const publicProduct = (item: Record<string, unknown>) => ({ ...item, image: item.imageUrl || null });
 const safeUrl = (value: unknown) => { try { const url = new URL(String(value || '')); return ['http:', 'https:'].includes(url.protocol) ? url.toString() : ''; } catch { return ''; } };
