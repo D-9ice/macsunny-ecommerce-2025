@@ -228,7 +228,7 @@ export default function FrontierPromoAd() {
 
   return (
     <div
-      className="fixed inset-0 z-[190] grid place-items-center bg-black/80 p-3 backdrop-blur-sm sm:p-6"
+      className="fixed inset-0 z-[190] grid place-items-center bg-black/80 p-3 sm:p-6"
       role="presentation"
     >
       <section
