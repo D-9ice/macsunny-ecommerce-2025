@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/app/lib/mongodb';
 import { EquivalentModel, EQUIVALENT_CACHE_TTL_MS } from '@/app/lib/equivalents';
 import { cookies } from 'next/headers';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 
-const isAdmin = async () => (await cookies()).get('ms_admin')?.value === '1';
+const isAdmin = async () => await isAdminAuthenticated();
 
 export async function GET(request: NextRequest) {
   if (!(await isAdmin())) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
