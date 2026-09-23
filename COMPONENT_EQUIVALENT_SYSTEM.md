@@ -4,102 +4,83 @@
 
 Provide MacSunny customers and administrators with useful component alternatives while prioritizing MacSunny inventory and minimizing external API usage.
 
-## Production design
+## Production search order
 
-### Search order
+1. Search MacSunny products by SKU, MPN and name.
+2. Reuse a valid 90-day equivalent/technical cache entry.
+3. On cache miss, query Nexar Supply GraphQL.
+4. If Nexar misses the part or returns no alternatives, query Mouser Search API V2.
+5. Cache verified technical data and replacement part numbers.
+6. Cross-check returned MPNs against MacSunny inventory.
+7. Return MacSunny stock first, then cached/external reference data.
+8. Public external lookup remains disabled unless explicitly enabled.
 
-1. Search MacSunny products by SKU, MPN, and name.
-2. Read a valid 90-day equivalent cache entry when available.
-3. If no cache exists and Nexar is configured, request similar parts from Nexar Supply GraphQL.
-4. Cache returned alternatives for 90 days.
-5. Cross-check returned MPNs against MacSunny inventory.
-6. Return local stock first, then cached/external reference data.
-7. External Nexar calls from public/customer flows are blocked unless `NEXAR_PUBLIC_LOOKUP_ENABLED=true`; authenticated admin test searches remain permitted.
+## External providers
 
-### External provider
+### Nexar
 
-Provider: **Nexar Supply API**, backed by Octopart supply data.
+- OAuth 2.0 Client Credentials
+- `NEXAR_CLIENT_ID`
+- `NEXAR_CLIENT_SECRET`
+- `NEXAR_PUBLIC_LOOKUP_ENABLED`
+- GraphQL `supSearchMpn` + `similarParts`
+- exact normalized MPN validation
 
-Authentication:
+### Mouser
 
-- OAuth 2.0
-- Client Credentials grant
-- Scope: `supply.domain`
-- Credentials: `NEXAR_CLIENT_ID` and `NEXAR_CLIENT_SECRET`
-- Public external lookup gate: `NEXAR_PUBLIC_LOOKUP_ENABLED` (defaults effectively to false unless explicitly set to `true`)
-- Access tokens are obtained server-side and cached until shortly before expiry.
+- Search API V2
+- `MOUSER_API_KEY`
+- `MOUSER_PUBLIC_LOOKUP_ENABLED`
+- `POST /api/v2/search/partnumberandmanufacturer`
+- exact manufacturer-MPN validation
+- `SuggestedReplacement` provides replacement candidates
+- ProductAttributes supply technical specifications
+- datasheet, image, lifecycle, manufacturer and description metadata are available to the server-side adapter
 
-GraphQL:
+### AllDatasheet
 
-- Endpoint: `https://api.nexar.com/graphql`
-- Primary operation: `supSearchMpn`
-- Equivalent source: `similarParts`
-- Returned fields currently include MPN, manufacturer, description, technical specifications, seller inventory, and median 1000-unit reference pricing where available.
+AllDatasheet confirmed on 2026-09-23 that it no longer offers an API service. MacSunny therefore keeps only an optional manual reference link. No AllDatasheet scraping or automated API path is permitted.
 
-### MongoDB cache
+## MongoDB cache
 
-Collection/model: `Equivalent`
+Model: `Equivalent`
 
-Important fields:
+Important fields include:
 
 - `primary_sku`
-- `primary_name`
+- `primary_mpn`
+- `primary_description`
+- `primary_manufacturer`
+- `primary_datasheet_url`
+- `primary_reference_url`
+- `primary_specs`
 - `equivalents[]`
 - `source`
 - `cached_at`
 - `expires_at`
 
-Allowed source values include:
-
-- `nexar`
-- `octopart` — legacy cached records only
-- `digikey`
-- `manual`
+Allowed current source values include `nexar`, `mouser`, `digikey`, `manual`, plus legacy `octopart`.
 
 TTL: 90 days.
-
-## AI assistant integration
-
-The MacSunny AI assistant detects equivalent/alternative requests, extracts a part-number-like token, then uses the smart equivalent search.
-
-Examples:
-
-- `What's equivalent to BC547?` → extracts `BC547`
-- `Find an alternative for IRFP460` → extracts `IRFP460`
-- `Replacement for LM7805` → extracts `LM7805`
-
-The assistant must distinguish:
-
-- products actually stocked by MacSunny;
-- known equivalent/reference parts from Nexar or cache;
-- external distributor availability.
-
-It must not describe an externally available component as MacSunny stock unless a local inventory match exists.
 
 ## Admin workspace
 
 Route: `/admin/equivalents`
 
-Functions:
+The workspace can:
 
-- view Nexar configuration state;
-- test component-equivalent searches;
-- inspect cache records;
-- identify whether a search used cache or external API;
-- delete cached records when necessary.
+- show Nexar and Mouser connection state
+- test component searches
+- show MacSunny inventory matches first
+- identify cache/API usage
+- display technical/datasheet data
+- display equivalent/replacement part numbers
+- delete cache records
 
-## Legacy status
+## AI assistant integration
 
-Removed:
+Equivalent/alternative requests use the same smart-search route. The assistant must distinguish MacSunny inventory from external reference data and must never describe external availability as MacSunny stock.
 
-- static `OCTOPART_API_KEY` integration;
-- Octopart v4 REST endpoint;
-- `/api/equivalents/octopart`.
+## Operational next step
 
-Retained only for compatibility:
-
-- old MongoDB records whose `source` is `octopart`.
-
-## Next operational step
-
-Create the Nexar Supply application and add its Client ID/Secret to Vercel. No further architecture change should be required for initial credential activation.
+Obtain a Mouser Search API key and add only `MOUSER_API_KEY` to Vercel Production. The adapter and routing are already implemented.
