@@ -3,13 +3,14 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { connectDB, MaintenanceStateModel } from '@/app/lib/mongodb';
 import { maintenanceSyncConfigured, sendMaintenanceEventToFrontier } from '@/app/lib/maintenanceSync';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 async function requireAdmin() {
   const cookieStore = await cookies();
-  return cookieStore.get('ms_admin')?.value === '1';
+  return await isAdminAuthenticated();
 }
 
 function cleanText(value: unknown, max: number) {
