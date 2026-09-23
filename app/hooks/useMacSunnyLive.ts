@@ -14,7 +14,6 @@ type StorefrontAction =
   | { type: 'open_support'; target: 'whatsapp' | 'location' };
 
 const GREETING_KEY = 'macsunny-live-greeted-v1';
-const VOICE_ACTIVATED_KEY = 'macsunny-live-voice-activated-v1';
 const GREETING = 'Welcome to MacSunny Electronics, How may we help you?';
 
 const eventId = () => {
@@ -30,7 +29,6 @@ export function useMacSunnyLive() {
   const [voiceActive, setVoiceActive] = useState(false);
   const [muted, setMuted] = useState(false);
   const [needsGesture, setNeedsGesture] = useState(false);
-  const [showVoiceInvite, setShowVoiceInvite] = useState(false);
   const [error, setError] = useState('');
   const [liveUserText, setLiveUserText] = useState('');
   const [liveAssistantText, setLiveAssistantText] = useState('');
@@ -294,12 +292,6 @@ export function useMacSunnyLive() {
       const fullVoiceStarted = modeRef.current === 'voice';
       setStatus(fullVoiceStarted ? 'listening' : 'ready');
       setVoiceActive(fullVoiceStarted);
-      if (fullVoiceStarted) {
-        setShowVoiceInvite(false);
-        try {
-          sessionStorage.setItem(VOICE_ACTIVATED_KEY, '1');
-        } catch {}
-      }
       maybeSendGreeting();
       return;
     }
@@ -537,10 +529,8 @@ export function useMacSunnyLive() {
   useEffect(() => {
     try {
       greetedRef.current = sessionStorage.getItem(GREETING_KEY) === '1';
-      setShowVoiceInvite(sessionStorage.getItem(VOICE_ACTIVATED_KEY) !== '1');
     } catch {
       greetedRef.current = false;
-      setShowVoiceInvite(true);
     }
 
     if (!greetedRef.current) {
@@ -573,7 +563,6 @@ export function useMacSunnyLive() {
     voiceActive,
     muted,
     needsGesture,
-    showVoiceInvite,
     error,
     liveUserText,
     liveAssistantText,
