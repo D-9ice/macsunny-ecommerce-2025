@@ -142,7 +142,7 @@ export default function EquivalentsManager() {
 
         {/* Test Search */}
         <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6">
-          <h2 className="text-xl font-bold mb-4">🔍 Test Component Search</h2>
+          <h2 className="text-xl font-bold mb-4">🔍 Component Search</h2>
           <form onSubmit={testSearch} className="flex gap-3 mb-4">
             <input
               type="text"
