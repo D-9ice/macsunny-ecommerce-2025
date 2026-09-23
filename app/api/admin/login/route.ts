@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { validateAdminCredentials } from '@/app/lib/auth';
+import { adminCookieName, adminSessionMaxAge, createAdminSessionToken } from '@/app/lib/adminSession';
 
 export async function POST(request: Request) {
   try {
@@ -19,12 +20,13 @@ export async function POST(request: Request) {
     if (isValid) {
       const cookieStore = await cookies();
       
-      // Set authentication cookie
-      cookieStore.set('ms_admin', '1', {
+      const token = await createAdminSessionToken();
+      cookieStore.set(adminCookieName(), token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 60 * 60 * 24, // 24 hours
+        path: '/',
+        maxAge: adminSessionMaxAge(),
       });
 
       return NextResponse.json({ success: true });
