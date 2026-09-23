@@ -186,3 +186,25 @@ const SiteSettingsSchema = new mongoose.Schema({
 
 export const SiteSettingsModel =
   mongoose.models.SiteSettings || mongoose.model('SiteSettings', SiteSettingsSchema);
+
+const ServiceRenewalItemSchema = new mongoose.Schema({
+  id: { type: String, required: true },
+  name: { type: String, required: true },
+  provider: { type: String, default: '' },
+  purpose: { type: String, default: '' },
+  billingType: { type: String, default: '' },
+  paymentExpectation: { type: String, default: '' },
+  status: { type: String, enum: ['active', 'review', 'pending', 'inactive'], default: 'review' },
+  nextReviewDate: { type: String, default: '' },
+  cost: { type: String, default: '' },
+  impact: { type: String, default: '' },
+  notes: { type: String, default: '' },
+}, { _id: false });
+
+const ServiceRenewalsSchema = new mongoose.Schema({
+  singletonKey: { type: String, unique: true, default: 'site' },
+  services: { type: [ServiceRenewalItemSchema], default: [] },
+}, { timestamps: true });
+
+export const ServiceRenewalsModel =
+  mongoose.models.ServiceRenewals || mongoose.model('ServiceRenewals', ServiceRenewalsSchema);
