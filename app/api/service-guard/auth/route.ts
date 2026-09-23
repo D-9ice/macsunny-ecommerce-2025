@@ -1,26 +1,24 @@
 import crypto from 'crypto';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { audit, OWNER_COOKIE, ownerToken } from '@/lib/site-compliance';
+import { audit, createOwnerToken, OWNER_COOKIE, ownerSessionMaxAge } from '@/lib/site-compliance';
+import { rateAllowed, readBoundedJson, sameOrigin } from '@/app/lib/requestSecurity';
 
-const attempts = new Map<string, { count: number; reset: number }>();
 export async function POST(request: Request) {
   const requestId = crypto.randomUUID();
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-  const now = Date.now();
-  const entry = attempts.get(ip);
-  if (entry && entry.reset > now && entry.count >= 5) return NextResponse.json({ success: false, message: 'Too many attempts. Try again later.', requestId }, { status: 429 });
-  const { passcode } = await request.json();
+  if (!sameOrigin(request)) return NextResponse.json({ success: false, message: 'Unexpected request origin.', requestId }, { status: 403 });
+  if (!rateAllowed(request, 'owner-login', 5, 15 * 60_000)) return NextResponse.json({ success: false, message: 'Too many attempts. Try again later.', requestId }, { status: 429 });
+  const parsed = await readBoundedJson(request, 4 * 1024);
+  if (!parsed.ok) return NextResponse.json({ success: false, message: parsed.message, requestId }, { status: parsed.status });
+  const { passcode } = parsed.value;
   const expected = (process.env.MACSUNNY_OWNER_PASSCODE || '').trim();
   const supplied = String(passcode || '').trim();
   const valid = Boolean(expected) && supplied.length === expected.length && crypto.timingSafeEqual(Buffer.from(supplied), Buffer.from(expected));
   if (!valid) {
-    attempts.set(ip, { count: entry?.reset && entry.reset > now ? entry.count + 1 : 1, reset: now + 15 * 60_000 });
     await audit('OWNER_LOGIN', false, request, requestId, 'Invalid passcode');
     return NextResponse.json({ success: false, message: 'Invalid owner passcode', requestId }, { status: 401 });
   }
-  attempts.delete(ip);
-  (await cookies()).set(OWNER_COOKIE, ownerToken(), { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', path: '/', maxAge: 60 * 60 });
+  (await cookies()).set(OWNER_COOKIE, createOwnerToken(), { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', path: '/', maxAge: ownerSessionMaxAge() });
   await audit('OWNER_LOGIN', true, request, requestId);
   return NextResponse.json({ success: true, requestId });
 }
