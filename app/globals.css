@@ -717,15 +717,36 @@ p, span, div {
 }
 
 
-/* Mobile promo isolation: keep the video on a clean compositor surface. */
+/* Mobile promo compositor relief: keep MacSunny visible, but freeze costly effects while video plays. */
 @media (max-width: 640px) {
-  body.frontier-promo-open {
-    background: #050811 !important;
+  body.frontier-promo-open .pcb-energy {
+    display: none !important;
   }
 
-  body.frontier-promo-open .site-header,
-  body.frontier-promo-open .site-content-shell,
-  body.frontier-promo-open #site-footer,
+  body.frontier-promo-open .site-content-shell *,
+  body.frontier-promo-open .site-header *,
+  body.frontier-promo-open #site-footer * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  body.frontier-promo-open .pcb-hero,
+  body.frontier-promo-open .search-deck,
+  body.frontier-promo-open .category-pills button,
+  body.frontier-promo-open .product-card,
+  body.frontier-promo-open .product-detail {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  body.frontier-promo-open .pressable-control {
+    will-change: auto !important;
+  }
+
+  body.frontier-promo-open .pcb-store:before {
+    background-attachment: scroll !important;
+  }
+
   body.frontier-promo-open .compliance-warning {
     display: none !important;
   }
