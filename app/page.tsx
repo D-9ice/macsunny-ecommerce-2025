@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -73,6 +73,34 @@ function Storefront() {
   const catalogueRef = useRef<HTMLElement>(null);
   const pendingVoiceSkuRef = useRef('');
   const addedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useLayoutEffect(() => {
+    const previousScrollRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = 'manual';
+
+    if (!window.location.hash) {
+      const resetToTop = () => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      };
+
+      resetToTop();
+      const frame = window.requestAnimationFrame(resetToTop);
+      const timer = window.setTimeout(resetToTop, 100);
+
+      return () => {
+        window.cancelAnimationFrame(frame);
+        window.clearTimeout(timer);
+        window.history.scrollRestoration = previousScrollRestoration;
+      };
+    }
+
+    return () => {
+      window.history.scrollRestoration = previousScrollRestoration;
+    };
+  }, []);
+
   const queryString = useMemo(() => { const p = new URLSearchParams({ page: String(page), limit: String(pageSize) }); if (q) p.set('search', q); if (category) p.set('category', category); return p.toString(); }, [q, category, page, pageSize]);
   useEffect(() => { setDraft(q); }, [q]);
   useEffect(() => {
