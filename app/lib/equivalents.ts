@@ -21,7 +21,7 @@ const EquivalentSchema = new mongoose.Schema({
     compatibility: { type: Number, default: 1.0 },
     notes: String,
   }],
-  source: { type: String, enum: ['nexar', 'alldatasheet', 'octopart', 'digikey', 'manual'], default: 'manual' },
+  source: { type: String, enum: ['nexar', 'mouser', 'octopart', 'digikey', 'manual'], default: 'manual' },
   cached_at: { type: Date, default: Date.now },
   expires_at: { type: Date, default: () => new Date(Date.now() + EQUIVALENT_CACHE_TTL_MS) },
 }, { timestamps: true });
