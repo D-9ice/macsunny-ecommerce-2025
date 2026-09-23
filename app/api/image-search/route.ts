@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { searchMouserComponent } from '@/app/lib/mouser';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
+import { rateAllowed, readBoundedJson, sameOrigin } from '@/app/lib/requestSecurity';
 
 /**
  * Image Search API - Multi-source image matching
@@ -83,7 +85,21 @@ async function searchUnsplash(query: string): Promise<string | null> {
  */
 export async function POST(request: Request) {
   try {
-    const { sku, name } = await request.json();
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    if (!sameOrigin(request)) {
+      return NextResponse.json({ success: false, message: 'Unexpected request origin.' }, { status: 403 });
+    }
+    if (!rateAllowed(request, 'image-search', 30, 5 * 60_000)) {
+      return NextResponse.json({ success: false, message: 'Too many image-search requests.' }, { status: 429 });
+    }
+    const parsed = await readBoundedJson(request, 8 * 1024);
+    if (!parsed.ok) {
+      return NextResponse.json({ success: false, message: parsed.message }, { status: parsed.status });
+    }
+    const sku = String(parsed.value?.sku || '').trim().slice(0, 120);
+    const name = String(parsed.value?.name || '').trim().slice(0, 200);
 
     if (!sku || !name) {
       return NextResponse.json(
@@ -147,6 +163,9 @@ export async function POST(request: Request) {
  * Check which image search APIs are configured
  */
 export async function GET() {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+  }
   const status = {
     mouser: !!process.env.MOUSER_API_KEY,
     google: !!(process.env.GOOGLE_SEARCH_API_KEY && process.env.GOOGLE_SEARCH_ENGINE_ID),
