@@ -172,28 +172,6 @@ export default function FloatingActionLauncher() {
             ? 'RETRY VOICE'
             : 'CLICK TO TALK';
 
-  const voiceBarTextClass =
-    voiceBarState === 'active'
-      ? 'text-emerald-300'
-      : voiceBarState === 'muted'
-        ? 'text-amber-200'
-        : voiceBarState === 'connecting'
-          ? 'text-amber-800'
-          : voiceBarState === 'error'
-            ? 'text-red-700'
-            : 'text-purple-700';
-
-  const voiceBarFill =
-    voiceBarState === 'active'
-      ? '#020617'
-      : voiceBarState === 'muted'
-        ? '#451a03'
-        : voiceBarState === 'connecting'
-          ? '#fffbeb'
-          : voiceBarState === 'error'
-            ? '#fef2f2'
-            : '#ffffff';
-
   const voiceBarsAnimated = voiceBarState === 'active' || voiceBarState === 'connecting';
 
   return (
@@ -201,8 +179,9 @@ export default function FloatingActionLauncher() {
       {!expanded && active === null && (
         <button
           type="button"
+          data-voice-state={voiceBarState}
           onClick={() => void activateVoiceConversation()}
-          className={`absolute bottom-[3px] right-[38px] z-0 flex h-[62px] w-[184px] max-w-[calc(100vw-4.25rem)] items-center bg-transparent pl-4 pr-5 drop-shadow-lg transition focus:outline-none ${voiceBarTextClass}`}
+          className="voice-status-bar absolute bottom-[3px] right-[38px] z-0 flex h-[62px] w-[184px] max-w-[calc(100vw-4.25rem)] items-center bg-transparent pl-4 pr-5 drop-shadow-lg transition focus:outline-none"
           aria-label={voiceActive ? 'End MacSunny voice conversation' : voiceBarState === 'error' ? 'Retry MacSunny voice conversation' : 'Click to talk to the MacSunny voice assistant'}
         >
           <svg
@@ -213,7 +192,9 @@ export default function FloatingActionLauncher() {
           >
             <path
               d="M23 1 H184 V61 H8 C4 61 2 59 3 55 L17 8 C18 4 20 2 23 1 Z"
-              fill={voiceBarFill}
+              fill="var(--voice-bar-fill)"
+              stroke="var(--voice-bar-border)"
+              strokeWidth="1"
             />
           </svg>
           <span className="relative z-10 flex h-8 w-7 shrink-0 items-center justify-center gap-[2px]" aria-hidden="true">
