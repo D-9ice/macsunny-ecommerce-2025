@@ -160,6 +160,22 @@ export default function EquivalentsManager() {
             </button>
           </form>
 
+          <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-slate-500">Legacy reference:</span>
+            <a
+              href={
+                testSKU.trim()
+                  ? 'https://www.alldatasheet.net/view.jsp?Searchword=' + encodeURIComponent(testSKU.trim())
+                  : 'https://www.alldatasheet.net/'
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-blue-300 hover:text-blue-200"
+            >
+              Search AllDatasheet directly ↗
+            </a>
+          </div>
+
           {testResult && (
             <div className="bg-gray-900 rounded-lg p-4 text-sm">
               <div className="flex items-center gap-2 mb-3">
