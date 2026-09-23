@@ -3,9 +3,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, Mic, MicOff, PhoneOff, Radio, Send, X } from 'lucide-react';
 import { useMacSunnyLive } from '@/app/hooks/useMacSunnyLive';
+import { useTheme } from '@/app/context/ThemeContext';
 
 type Action = 'whatsapp' | 'ai' | 'location';
 type Message = { role: 'user' | 'assistant'; content: string };
+
+function readableAccentForeground(hex: string) {
+  const match = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!match) return '#ffffff';
+  const value = match[1];
+  const channels = [0, 2, 4].map((offset) => parseInt(value.slice(offset, offset + 2), 16) / 255);
+  const linear = channels.map((channel) =>
+    channel <= 0.04045 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4)
+  );
+  const luminance = 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+  return luminance > 0.48 ? '#111827' : '#ffffff';
+}
 
 function WhatsAppIcon({ className = 'h-7 w-7' }: { className?: string }) {
   return (
@@ -16,6 +29,8 @@ function WhatsAppIcon({ className = 'h-7 w-7' }: { className?: string }) {
 }
 
 export default function FloatingActionLauncher() {
+  const { theme } = useTheme();
+  const voiceForeground = readableAccentForeground(theme.accent);
   const [expanded, setExpanded] = useState(false);
   const [active, setActive] = useState<Action | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -181,7 +196,8 @@ export default function FloatingActionLauncher() {
           type="button"
           data-voice-state={voiceBarState}
           onClick={() => void activateVoiceConversation()}
-          className="voice-status-bar absolute bottom-[3px] right-[38px] z-0 flex h-[62px] w-[184px] max-w-[calc(100vw-4.25rem)] items-center bg-transparent pl-4 pr-5 drop-shadow-lg transition focus:outline-none"
+          className="voice-status-bar absolute bottom-[3px] right-[38px] z-0 flex h-[62px] w-[184px] max-w-[calc(100vw-4.25rem)] items-center bg-transparent pl-4 pr-5 transition focus:outline-none"
+          style={{ color: voiceForeground }}
           aria-label={voiceActive ? 'End MacSunny voice conversation' : voiceBarState === 'error' ? 'Retry MacSunny voice conversation' : 'Click to talk to the MacSunny voice assistant'}
         >
           <svg
