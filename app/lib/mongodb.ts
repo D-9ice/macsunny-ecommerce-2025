@@ -208,3 +208,51 @@ const ServiceRenewalsSchema = new mongoose.Schema({
 
 export const ServiceRenewalsModel =
   mongoose.models.ServiceRenewals || mongoose.model('ServiceRenewals', ServiceRenewalsSchema);
+
+const MaintenanceNoticeSchema = new mongoose.Schema({
+  id: { type: String, required: true },
+  direction: { type: String, enum: ['frontier_to_macsunny', 'macsunny_to_frontier'], required: true },
+  severity: { type: String, enum: ['info', 'warning', 'critical'], default: 'warning' },
+  subject: { type: String, required: true },
+  message: { type: String, required: true },
+  status: { type: String, enum: ['open', 'acknowledged', 'resolved'], default: 'open' },
+  source: { type: String, default: '' },
+  createdAt: { type: Date, default: Date.now },
+  acknowledgedAt: { type: Date, default: null },
+  resolvedAt: { type: Date, default: null },
+  syncStatus: { type: String, enum: ['synced', 'pending', 'failed'], default: 'synced' },
+}, { _id: false });
+
+const MaintenanceRecordSchema = new mongoose.Schema({
+  reference: { type: String, required: true },
+  completedAt: { type: Date, required: true },
+  summary: { type: String, default: '' },
+  findings: { type: String, default: '' },
+  workPerformed: { type: String, default: '' },
+  recommendations: { type: String, default: '' },
+  nextDueAt: { type: Date, required: true },
+  syncedAt: { type: Date, default: Date.now },
+}, { _id: false });
+
+const MaintenanceStateSchema = new mongoose.Schema({
+  singletonKey: { type: String, unique: true, default: 'site' },
+  clientId: { type: String, default: 'macsunny' },
+  provider: { type: String, default: 'Frontier DevConsults' },
+  intervalMonths: { type: Number, default: 3 },
+  lastServiceAt: { type: Date, default: null },
+  nextDueAt: { type: Date, default: null },
+  notices: { type: [MaintenanceNoticeSchema], default: [] },
+  records: { type: [MaintenanceRecordSchema], default: [] },
+}, { timestamps: true });
+
+export const MaintenanceStateModel =
+  mongoose.models.MaintenanceState || mongoose.model('MaintenanceState', MaintenanceStateSchema);
+
+const MaintenanceSyncNonceSchema = new mongoose.Schema({
+  nonce: { type: String, unique: true, required: true },
+  source: { type: String, required: true },
+  expiresAt: { type: Date, required: true, index: { expires: 0 } },
+}, { timestamps: true });
+
+export const MaintenanceSyncNonceModel =
+  mongoose.models.MaintenanceSyncNonce || mongoose.model('MaintenanceSyncNonce', MaintenanceSyncNonceSchema);
