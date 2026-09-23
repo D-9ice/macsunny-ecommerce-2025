@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { connectDB, SiteSettingsModel } from '@/app/lib/mongodb';
 import { DEFAULT_SITE_THEME, sanitizeSiteTheme } from '@/app/lib/siteTheme';
 import { isAdminAuthenticated } from '@/app/lib/adminAuth';
+import { rateAllowed, readBoundedJson, sameOrigin } from '@/app/lib/requestSecurity';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,13 +27,21 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
     if (!(await isAdminAuthenticated())) {
       return NextResponse.json({ success: false, message: 'Unauthorized.' }, { status: 401 });
     }
+    if (!sameOrigin(request)) {
+      return NextResponse.json({ success: false, message: 'Unexpected request origin.' }, { status: 403 });
+    }
+    if (!rateAllowed(request, 'admin-theme-write', 20, 5 * 60_000)) {
+      return NextResponse.json({ success: false, message: 'Too many theme update requests.' }, { status: 429 });
+    }
 
-    const body = await request.json();
-    const theme = sanitizeSiteTheme(body?.theme, DEFAULT_SITE_THEME);
+    const parsed = await readBoundedJson(request, 8 * 1024);
+    if (!parsed.ok) {
+      return NextResponse.json({ success: false, message: parsed.message }, { status: parsed.status });
+    }
+    const theme = sanitizeSiteTheme(parsed.value?.theme, DEFAULT_SITE_THEME);
 
     await connectDB();
     await SiteSettingsModel.findOneAndUpdate(
