@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { searchMouserComponent } from '@/app/lib/mouser';
 
 /**
  * Image Search API - Multi-source image matching
@@ -6,34 +7,15 @@ import { NextResponse } from 'next/server';
  * All API keys are optional - graceful fallback
  */
 
-// Search Mouser Electronics API
+// Search Mouser Electronics API through the shared V2 adapter.
 async function searchMouser(sku: string): Promise<string | null> {
-  const apiKey = process.env.MOUSER_API_KEY;
-  if (!apiKey) return null;
-
   try {
-    const response = await fetch(
-      `https://api.mouser.com/api/v1/search/keyword?apiKey=${apiKey}&keyword=${encodeURIComponent(sku)}`,
-      {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-      }
-    );
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.SearchResults?.Parts && data.SearchResults.Parts.length > 0) {
-        const firstPart = data.SearchResults.Parts[0];
-        return firstPart.ImagePath || firstPart.ProductDetailUrl || null;
-      }
-    }
+    const result = await searchMouserComponent(sku, { resolveReplacement: false });
+    return result.found ? (result.source.imageUrl || result.source.productUrl || null) : null;
   } catch (error) {
     console.error('Mouser API error:', error);
+    return null;
   }
-
-  return null;
 }
 
 // Search Google Custom Search API
