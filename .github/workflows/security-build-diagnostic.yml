@@ -10,14 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.9.0'
-          cache: npm
-      - name: Install
-        run: npm ci
-      - name: Build
-        run: npm run build
+      - name: Clone repository
+        run: |
+          git clone --depth 1 --branch security-build-diagnostic https://github.com/D-9ice/macsunny-ecommerce-2025.git source
+          cd source
+          node -v
+          npm -v
+      - name: Install and build
+        run: |
+          cd source
+          npm ci
+          npm run build
