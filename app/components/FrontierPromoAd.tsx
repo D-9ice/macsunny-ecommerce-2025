@@ -29,6 +29,7 @@ export default function FrontierPromoAd() {
   const [open, setOpen] = useState(false);
   const [muted, setMuted] = useState(true);
   const [videoFailed, setVideoFailed] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
   const lastActivityRef = useRef(Date.now());
   const sessionStartRef = useRef(0);
   const initialTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -46,6 +47,8 @@ export default function FrontierPromoAd() {
 
   const closePromo = () => {
     setOpen(false);
+    setVideoReady(false);
+    setVideoFailed(false);
     markActivity();
   };
 
@@ -148,7 +151,7 @@ export default function FrontierPromoAd() {
 
   return (
     <div
-      className="fixed inset-0 z-[190] grid place-items-center bg-black/80 p-3 sm:p-6"
+      className={`fixed inset-0 z-[190] grid place-items-center bg-black/80 p-3 sm:p-6 ${videoReady ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
       role="presentation"
     >
       <section
@@ -190,7 +193,11 @@ export default function FrontierPromoAd() {
               playsInline
               preload="auto"
               controls={false}
-              onError={() => setVideoFailed(true)}
+              onLoadedData={() => setVideoReady(true)}
+              onError={() => {
+                setVideoFailed(true);
+                setVideoReady(true);
+              }}
               className="block h-full w-full"
             />
             <button
@@ -261,7 +268,7 @@ export default function FrontierPromoAd() {
             <span className="block text-sm font-bold text-white sm:text-base">FRONTIER DEVCONSULTS</span>
             <span className="mt-0.5 block text-xs text-slate-400 sm:text-sm">Building Digital Excellence</span>
           </span>
-          <span className="inline-flex shrink-0 items-center gap-2 rounded-full bg-cyan-400 px-4 py-2 text-xs font-black text-slate-950 sm:text-sm">
+          <span className="inline-flex shrink-0 items-center gap-2 rounded-full bg-green-800 px-4 py-2 text-xs font-black text-white sm:text-sm">
             Visit Website
             <ExternalLink size={15} />
           </span>
