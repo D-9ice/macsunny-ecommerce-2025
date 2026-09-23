@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectDB, getMongoDb, OrderModel, ProductModel } from '@/app/lib/mongodb';
 import { orderSchema } from '@/app/lib/validations';
-import { cookies } from 'next/headers';
 import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 import { rateAllowed, readBoundedJson, sameOrigin } from '@/app/lib/requestSecurity';
 
@@ -135,8 +134,17 @@ export async function POST(request: Request) {
     const requestedSkus = [...new Set(data.items.map((item) => item.sku))];
     const products = await ProductModel.find({ sku: { $in: requestedSkus } })
       .select('sku name price')
-      .lean() as Array<{ sku: string; name: string; price: number }>;
-    const productBySku = new Map(products.map((product) => [product.sku, product]));
+      .lean();
+
+    const productBySku = new Map<string, { sku: string; name: string; price: number }>();
+    for (const product of products) {
+      const sku = String((product as any).sku || '').trim();
+      const name = String((product as any).name || '').trim();
+      const price = Number((product as any).price);
+      if (sku && name && Number.isFinite(price) && price > 0) {
+        productBySku.set(sku, { sku, name, price });
+      }
+    }
 
     if (productBySku.size !== requestedSkus.length) {
       return NextResponse.json(
