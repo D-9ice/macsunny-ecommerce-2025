@@ -14,20 +14,28 @@ export const productUpdateSchema = productSchema.partial();
 
 // Order item validation
 export const orderItemSchema = z.object({
-  sku: z.string().min(1),
-  name: z.string().min(1),
-  price: z.number().positive(),
-  qty: z.number().int().positive('Quantity must be at least 1'),
+  sku: z.string().trim().min(1).max(120),
+  name: z.string().trim().min(1).max(200),
+  price: z.number().positive().max(100_000_000),
+  qty: z.number().int().positive('Quantity must be at least 1').max(100),
 });
 
 // Order validation
 export const orderSchema = z.object({
-  items: z.array(orderItemSchema).min(1, 'Order must have at least one item'),
-  customerName: z.string().min(2, 'Customer name is required'),
-  customerEmail: z.string().email('Invalid email').optional(),
-  customerPhone: z.string().min(10, 'Valid phone number is required'),
-  customerAddress: z.string().optional(),
-  total: z.number().positive('Total must be positive'),
+  items: z.array(orderItemSchema).min(1, 'Order must have at least one item').max(100),
+  customerName: z.string().trim().min(2, 'Customer name is required').max(160),
+  customerEmail: z.string().trim().email('Invalid email').max(320).optional(),
+  customerPhone: z.string().trim().min(7, 'Valid phone number is required').max(40),
+  customerAddress: z.string().trim().max(500).optional(),
+  total: z.number().positive('Total must be positive').max(100_000_000),
+  deliveryRequested: z.boolean().optional().default(false),
+  deliveryLocation: z.object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    address: z.string().trim().min(1).max(500),
+    city: z.string().trim().max(120).optional(),
+    region: z.string().trim().max(120).optional(),
+  }).optional(),
 });
 
 // Admin login validation
@@ -38,7 +46,7 @@ export const adminLoginSchema = z.object({
 // Admin password change validation
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z.string().min(6, 'New password must be at least 6 characters'),
+  newPassword: z.string().min(12, 'New password must be at least 12 characters').max(128),
 });
 
 // Category validation
