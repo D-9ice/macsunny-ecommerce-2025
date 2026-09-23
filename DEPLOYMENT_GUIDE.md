@@ -67,22 +67,12 @@ git push -u origin main
    - Wait for deployment to complete
    - Your site will be live at `https://your-app-name.vercel.app`
 
-### Step 4: Initialize Admin Account
+### Step 4: Admin Access
 
-1. **First Login**
-   - Visit `https://your-app-name.vercel.app/admin/login`
-   - Default password: `admin123`
-   - **IMPORTANT:** Change this immediately!
-
-2. **Change Admin Password**
-   - After login, go to Admin → Settings
-   - Or visit `/admin/password`
-   - Change to a strong password
-   - Password is stored securely in MongoDB with bcrypt hashing
-
-3. **Seed Categories** (Optional)
-   - Visit `https://your-app-name.vercel.app/api/categories/seed`
-   - Or use the "+ Add Category" button in admin panel
+1. The production admin account must already be provisioned in MongoDB with a bcrypt password hash.
+2. There is intentionally **no default admin password** and the application will not create one automatically.
+3. Visit `/admin/login` only after the admin record is provisioned.
+4. Category seeding is an authenticated admin operation; use the admin interface after signing in.
 
 ### Step 5: Configure Domain (Optional)
 
@@ -104,7 +94,7 @@ git push -u origin main
 ✅ **Admin Protection**
 - Authentication required for all admin routes
 - HTTP-only cookies
-- 24-hour session timeout
+- Signed, time-limited admin sessions
 - Change password functionality
 
 ✅ **Data Validation**
@@ -162,7 +152,7 @@ Theme persists across sessions via localStorage.
 
 ## 📊 Default Setup
 
-**Default Admin Password:** `admin123`
+**Default Admin Password:** None. Production credentials must be provisioned securely.
 **Default Categories:**
 - Capacitors
 - ICs
@@ -211,7 +201,7 @@ For issues or questions:
 - [ ] Vercel account created
 - [ ] Environment variables configured
 - [ ] Site deployed successfully
-- [ ] Admin password changed from default
+- [ ] Admin account securely provisioned
 - [ ] Categories seeded
 - [ ] Test order placed
 - [ ] Mobile responsiveness verified
