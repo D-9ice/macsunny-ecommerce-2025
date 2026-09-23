@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getMongoDb } from '@/app/lib/mongodb';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
 
 // GET - Fetch delivery settings
 export async function GET(req: NextRequest) {
   try {
     // Check authentication
     const cookieStore = await cookies();
-    const isAuthenticated = cookieStore.get('ms_admin')?.value === '1';
+    const isAuthenticated = await isAdminAuthenticated();
     
     if (!isAuthenticated) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest) {
   try {
     // Check authentication
     const cookieStore = await cookies();
-    const isAuthenticated = cookieStore.get('ms_admin')?.value === '1';
+    const isAuthenticated = await isAdminAuthenticated();
     
     if (!isAuthenticated) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
