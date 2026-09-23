@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectDB, CategoryModel } from '@/app/lib/mongodb';
+import { isAdminAuthenticated } from '@/app/lib/adminAuth';
+import { sameOrigin } from '@/app/lib/requestSecurity';
 
 const defaultCategories = [
   'Capacitors',
@@ -15,6 +17,12 @@ const defaultCategories = [
 
 export async function POST(request: Request) {
   try {
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    if (!sameOrigin(request)) {
+      return NextResponse.json({ success: false, message: 'Unexpected request origin.' }, { status: 403 });
+    }
     await connectDB();
     const requested = new URL(request.url).searchParams.get('category');
     const requestedCategory = requested
