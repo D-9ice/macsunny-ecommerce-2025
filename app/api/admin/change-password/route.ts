@@ -1,15 +1,21 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { validateAdminCredentials, hashPassword } from '@/app/lib/auth';
 import { connectDB } from '@/app/lib/mongodb';
 import Admin from '@/src/models/Admin';
 import { isAdminAuthenticated } from '@/app/lib/adminAuth';
+import { rateAllowed, readBoundedJson, sameOrigin } from '@/app/lib/requestSecurity';
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const isAuthenticated = await isAdminAuthenticated();
+    if (!sameOrigin(request)) {
+      return NextResponse.json({ success: false, message: 'Unexpected request origin.' }, { status: 403 });
+    }
 
+    if (!rateAllowed(request, 'admin-change-password', 5, 15 * 60_000)) {
+      return NextResponse.json({ success: false, message: 'Too many password-change attempts. Try again later.' }, { status: 429 });
+    }
+
+    const isAuthenticated = await isAdminAuthenticated();
     if (!isAuthenticated) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
@@ -17,7 +23,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const { currentPassword, newPassword } = await request.json();
+    const parsed = await readBoundedJson(request, 8 * 1024);
+    if (!parsed.ok) {
+      return NextResponse.json({ success: false, message: parsed.message }, { status: parsed.status });
+    }
+
+    const currentPassword = String(parsed.value?.currentPassword || '').slice(0, 256);
+    const newPassword = String(parsed.value?.newPassword || '').slice(0, 256);
 
     if (!currentPassword || !newPassword) {
       return NextResponse.json(
@@ -26,9 +38,16 @@ export async function POST(request: Request) {
       );
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < 12) {
       return NextResponse.json(
-        { success: false, message: 'New password must be at least 6 characters' },
+        { success: false, message: 'New password must be at least 12 characters' },
+        { status: 400 }
+      );
+    }
+
+    if (newPassword === currentPassword) {
+      return NextResponse.json(
+        { success: false, message: 'Choose a new password that is different from the current password.' },
         { status: 400 }
       );
     }
