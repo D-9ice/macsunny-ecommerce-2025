@@ -202,22 +202,22 @@ export default function FloatingActionLauncher() {
         <button
           type="button"
           onClick={() => void activateVoiceConversation()}
-          className={`absolute bottom-0 right-[50px] z-0 flex h-[68px] w-[210px] max-w-[calc(100vw-4.75rem)] items-center bg-transparent pl-5 pr-7 drop-shadow-xl transition focus:outline-none focus:ring-2 focus:ring-purple-400 ${voiceBarTextClass}`}
+          className={`absolute bottom-[3px] right-[38px] z-0 flex h-[62px] w-[184px] max-w-[calc(100vw-4.25rem)] items-center bg-transparent pl-4 pr-5 drop-shadow-lg transition focus:outline-none ${voiceBarTextClass}`}
           aria-label={voiceActive ? 'End MacSunny voice conversation' : voiceBarState === 'error' ? 'Retry MacSunny voice conversation' : 'Click to talk to the MacSunny voice assistant'}
         >
           <svg
-            viewBox="0 0 210 68"
+            viewBox="0 0 184 62"
             preserveAspectRatio="none"
             className="pointer-events-none absolute inset-0 h-full w-full"
             aria-hidden="true"
           >
             <path
-              d="M24 0 H210 V68 H7 C3 68 1 66 2 62 L18 7 C19 3 21 1 24 0 Z"
+              d="M23 1 H184 V61 H8 C4 61 2 59 3 55 L17 8 C18 4 20 2 23 1 Z"
               fill={voiceBarFill}
             />
           </svg>
-          <span className="relative z-10 flex h-9 w-8 shrink-0 items-center justify-center gap-[3px]" aria-hidden="true">
-            {[13, 22, 30, 19, 26].map((height, index) => (
+          <span className="relative z-10 flex h-8 w-7 shrink-0 items-center justify-center gap-[2px]" aria-hidden="true">
+            {[11, 18, 25, 16, 21].map((height, index) => (
               <span
                 key={`${height}-${index}`}
                 className={`w-[3px] rounded-sm bg-current ${voiceBarsAnimated ? 'voice-vu-bar' : ''}`}
@@ -225,7 +225,7 @@ export default function FloatingActionLauncher() {
               />
             ))}
           </span>
-          <span className="relative z-10 ml-2 min-w-0 flex-1 whitespace-nowrap text-center text-[12px] font-black tracking-[0.055em] sm:text-[13px]">
+          <span className="relative z-10 ml-2 min-w-0 flex-1 whitespace-nowrap text-center text-[11px] font-black tracking-[0.045em] sm:text-[12px]">
             {voiceBarLabel}
           </span>
         </button>
