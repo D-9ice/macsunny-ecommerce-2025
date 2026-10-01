@@ -22,11 +22,22 @@ export default function MongoStatus() {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const res = await fetch('/api/db-status');
+        const res = await fetch('/api/admin/db-status', { cache: 'no-store' });
         const data = await res.json();
 
-        setStatus(data.status);
-        if (data.status === 'connected') {
+        if (res.status === 401) {
+          setStatus('disconnected');
+          setUptime(0);
+          setStats(null);
+          return;
+        }
+
+        const nextStatus: MongoStatus =
+          data.status === 'connected' || data.status === 'connecting' || data.status === 'disconnected'
+            ? data.status
+            : 'disconnected';
+        setStatus(nextStatus);
+        if (nextStatus === 'connected') {
           setUptime((prev) => prev + 5);
           setStats({
             products: data.products ?? 0,
