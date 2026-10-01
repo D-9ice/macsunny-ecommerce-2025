@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { RefreshCw, Trash2 } from 'lucide-react';
 import { Order, getAllOrders } from '@/app/lib/orders';
 import MongoStatus from '@/app/components/MongoStatus';
@@ -8,6 +9,7 @@ import DeliveryTracker from '@/app/components/DeliveryTracker';
 import AdminWorkspace from '@/app/admin/components/AdminWorkspace';
 
 export default function OrdersPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -18,8 +20,18 @@ export default function OrdersPage() {
   const loadOrders = useCallback(async (showActivity = false) => {
     if (showActivity) setRefreshing(true);
     try {
-      const response = await fetch('/api/orders', { cache: 'no-store' });
+      const response = await fetch('/api/admin/orders', {
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+      });
       const data = await response.json();
+
+      if (response.status === 401) {
+        router.replace('/admin/login?returnTo=/admin/orders');
+        return;
+      }
+
       if (!response.ok || !data.success) throw new Error(data.message || 'Orders could not be refreshed');
       const nextOrders: Order[] = data.orders || [];
       setOrders(nextOrders);
@@ -33,7 +45,7 @@ export default function OrdersPage() {
     } finally {
       if (showActivity) setRefreshing(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => { void loadOrders(true); }, [loadOrders]);
   useEffect(() => {
@@ -49,12 +61,17 @@ export default function OrdersPage() {
 
   const handleStatusChange = async (orderId: string, newStatus: Order['status']) => {
     try {
-      const response = await fetch('/api/orders', {
+      const response = await fetch('/api/admin/orders', {
         method: 'PUT',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId, status: newStatus }),
       });
       const data = await response.json();
+      if (response.status === 401) {
+        router.replace('/admin/login?returnTo=/admin/orders');
+        return;
+      }
       if (data.success) {
         await loadOrders();
         if (selectedOrder?.orderId === orderId) setSelectedOrder({ ...selectedOrder, status: newStatus });
@@ -78,8 +95,15 @@ export default function OrdersPage() {
     if (!confirm(`Are you sure you want to permanently delete ${totalCount} orders (${completedCount} completed, ${cancelledCount} cancelled)?`)) return;
 
     try {
-      const response = await fetch('/api/orders', { method: 'DELETE' });
+      const response = await fetch('/api/admin/orders', {
+        method: 'DELETE',
+        credentials: 'same-origin',
+      });
       const data = await response.json();
+      if (response.status === 401) {
+        router.replace('/admin/login?returnTo=/admin/orders');
+        return;
+      }
       if (data.success) {
         await loadOrders();
         setSelectedOrder(null);
