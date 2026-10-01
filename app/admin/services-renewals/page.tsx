@@ -96,6 +96,8 @@ export default function ServicesRenewalsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [domainSyncMessage, setDomainSyncMessage] = useState('');
+  const [domainSyncing, setDomainSyncing] = useState(false);
   const [maintenance, setMaintenance] = useState<MaintenanceState | null>(null);
   const [maintenanceLoading, setMaintenanceLoading] = useState(true);
   const [maintenanceMessage, setMaintenanceMessage] = useState('');
@@ -109,6 +111,7 @@ export default function ServicesRenewalsPage() {
         const data = await response.json();
         if (!response.ok || !data?.success) throw new Error(data?.message || 'Unable to load services.');
         setServices(data.services || []);
+        if (data.domainSync?.message) setDomainSyncMessage(data.domainSync.message);
       } catch (error) {
         setMessage(error instanceof Error ? error.message : 'Unable to load services.');
       } finally {
@@ -228,6 +231,26 @@ export default function ServicesRenewalsPage() {
     setServices((current) => current.filter((service) => service.id !== id));
   };
 
+  const refreshDomainStatus = async () => {
+    setDomainSyncing(true);
+    setDomainSyncMessage('');
+    try {
+      const response = await fetch('/api/admin/services-renewals', { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.message || 'Unable to refresh domain registry status.');
+      }
+      setServices(data.services || []);
+      setDomainSyncMessage(data.domainSync?.message || 'Domain registry status refreshed.');
+    } catch (error) {
+      setDomainSyncMessage(
+        error instanceof Error ? error.message : 'Unable to refresh domain registry status.'
+      );
+    } finally {
+      setDomainSyncing(false);
+    }
+  };
+
   const save = async () => {
     setSaving(true);
     setMessage('');
@@ -298,6 +321,28 @@ export default function ServicesRenewalsPage() {
           <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">Needs attention</p>
             <p className="mt-2 text-2xl font-black text-orange-200">{reminders.length}</p>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-blue-500/30 bg-blue-950/20 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-bold text-blue-100">Domain Registry Status</h2>
+              <p className="mt-1 text-sm text-slate-300">
+                macsunny.com is checked against the public .com registry when this page loads.
+              </p>
+              {domainSyncMessage ? (
+                <p className="mt-2 text-xs text-blue-200/90">{domainSyncMessage}</p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={() => void refreshDomainStatus()}
+              disabled={domainSyncing}
+              className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-4 py-2 text-sm font-semibold text-blue-200 hover:bg-blue-500/20 disabled:opacity-50"
+            >
+              {domainSyncing ? 'Checking registry…' : 'Refresh Domain Status'}
+            </button>
           </div>
         </section>
 
