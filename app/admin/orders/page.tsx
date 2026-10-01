@@ -3,10 +3,24 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { RefreshCw, Trash2 } from 'lucide-react';
-import { Order, getAllOrders } from '@/app/lib/orders';
+import { Order } from '@/app/lib/orders';
 import MongoStatus from '@/app/components/MongoStatus';
 import DeliveryTracker from '@/app/components/DeliveryTracker';
 import AdminWorkspace from '@/app/admin/components/AdminWorkspace';
+
+async function readApiJson(response: Response) {
+  const raw = await response.text();
+
+  if (!raw.trim()) {
+    throw new Error(`Orders API returned an empty response (HTTP ${response.status})`);
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error(`Orders API returned an invalid response (HTTP ${response.status})`);
+  }
+}
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -20,19 +34,21 @@ export default function OrdersPage() {
   const loadOrders = useCallback(async (showActivity = false) => {
     if (showActivity) setRefreshing(true);
     try {
-      const response = await fetch('/api/admin/orders', {
+      const response = await fetch('/api/orders-admin', {
         cache: 'no-store',
         credentials: 'same-origin',
         headers: { Accept: 'application/json' },
       });
-      const data = await response.json();
+      const data = await readApiJson(response);
 
       if (response.status === 401) {
         router.replace('/admin/login?returnTo=/admin/orders');
         return;
       }
 
-      if (!response.ok || !data.success) throw new Error(data.message || 'Orders could not be refreshed');
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || `Orders could not be refreshed (HTTP ${response.status})`);
+      }
       const nextOrders: Order[] = data.orders || [];
       setOrders(nextOrders);
       setSelectedOrder((current) => current ? nextOrders.find((order) => order.orderId === current.orderId) || null : null);
@@ -40,7 +56,7 @@ export default function OrdersPage() {
       setRefreshError('');
     } catch (error) {
       console.error('Failed to load orders:', error);
-      setOrders(getAllOrders());
+      setOrders([]);
       setRefreshError(error instanceof Error ? error.message : 'Orders could not be refreshed');
     } finally {
       if (showActivity) setRefreshing(false);
@@ -61,13 +77,13 @@ export default function OrdersPage() {
 
   const handleStatusChange = async (orderId: string, newStatus: Order['status']) => {
     try {
-      const response = await fetch('/api/admin/orders', {
+      const response = await fetch('/api/orders-admin', {
         method: 'PUT',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId, status: newStatus }),
       });
-      const data = await response.json();
+      const data = await readApiJson(response);
       if (response.status === 401) {
         router.replace('/admin/login?returnTo=/admin/orders');
         return;
@@ -95,11 +111,11 @@ export default function OrdersPage() {
     if (!confirm(`Are you sure you want to permanently delete ${totalCount} orders (${completedCount} completed, ${cancelledCount} cancelled)?`)) return;
 
     try {
-      const response = await fetch('/api/admin/orders', {
+      const response = await fetch('/api/orders-admin', {
         method: 'DELETE',
         credentials: 'same-origin',
       });
-      const data = await response.json();
+      const data = await readApiJson(response);
       if (response.status === 401) {
         router.replace('/admin/login?returnTo=/admin/orders');
         return;
@@ -168,8 +184,23 @@ export default function OrdersPage() {
       {orders.length === 0 ? (
         <section className="grid min-h-[45vh] place-items-center rounded-2xl border border-slate-800 bg-slate-950 p-8 text-center">
           <div>
-            <h2 className="text-2xl font-bold text-amber-100">No Orders Yet</h2>
-            <p className="mt-3 text-slate-400">Orders from customers will appear here.</p>
+            <h2 className="text-2xl font-bold text-amber-100">
+              {refreshError ? 'Orders Feed Unavailable' : 'No Orders Yet'}
+            </h2>
+            <p className="mt-3 text-slate-400">
+              {refreshError
+                ? 'MongoDB is reachable, but the authenticated orders feed could not be loaded.'
+                : 'Orders from customers will appear here.'}
+            </p>
+            {refreshError ? (
+              <button
+                type="button"
+                onClick={() => void loadOrders(true)}
+                className="mt-5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500"
+              >
+                Retry Orders Feed
+              </button>
+            ) : null}
           </div>
         </section>
       ) : (
